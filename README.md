@@ -2,7 +2,7 @@
 
 Une source JSON traduit les décisions de commandes pour **Codex et Claude Code**.
 Le socle global est dans [`core-policy.json`](core-policy.json) ; chaque dépôt garde
-sa propre couche et une copie autonome du générateur. Node.js ≥ 22, aucune dépendance
+sa propre couche, une copie autonome du générateur et une commande de brief. Node.js ≥ 22, aucune dépendance
 d’exécution ou de test, JavaScript sans casts. Les échanges et la documentation sont en français.
 
 ## Installer l’outil sur chaque machine
@@ -13,7 +13,7 @@ Depuis un checkout de cette PR, puis de la version relue et fusionnée :
 npm test
 mkdir -p .agent-tmp
 npm pack --pack-destination .agent-tmp
-npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.0.0.tgz
+npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.1.0.tgz
 agent-policy --help
 ```
 
@@ -98,12 +98,13 @@ Structure à versionner dans le projet :
 ```text
 agent-policy/policy.json              # source du dépôt, vide mais valide à l'initialisation
 scripts/agent-policy/generate.mjs     # copie autonome avec en-tête de version
+scripts/agent-policy/brief.mjs        # commande de brief autonome avec en-tête de version
 .codex/rules/project.rules           # sortie générée
 .claude/settings.json                # entrées Bash générées ; autres permissions et clés conservées
 ```
 
-`init` conserve les fichiers existants. `agent-policy init --upgrade` remplace la copie du
-générateur par celle de l’outil installé, sans modifier un octet de `policy.json`.
+`init` conserve les fichiers existants et ajoute les copies absentes. `agent-policy init --upgrade`
+rafraîchit le générateur et la commande `brief` depuis l’outil installé, sans modifier un octet de `policy.json`.
 Ces deux commandes sont idempotentes. Une source existante invalide fait échouer l’opération.
 
 La gate du projet appelle sa **copie versionnée**, sans outil global, paquet à télécharger ni réseau :
@@ -132,6 +133,105 @@ l’écriture des fichiers, y compris pendant une installation.
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
 un binaire présent qui échoue ou donne un verdict différent l’est. Ce contrôle reste hors ligne
 et isole l’état éventuel du processus Codex dans `.agent-tmp/`, ensuite nettoyé.
+
+## Produire un brief de délégation
+
+Depuis la racine du dépôt contenant le plan et le brief :
+
+```sh
+agent-policy brief brief.json
+# Même rendu hors ligne, sans outil global :
+node scripts/agent-policy/brief.mjs brief.json
+```
+
+La sortie standard contient uniquement l’en-tête
+`Modèle : <modèle> · Effort : <effort> · Thread : <chantier>, nouveau | continuer`,
+puis un bloc de code. `thread.mode` choisit **un seul** des deux états. Dans ce bloc : worktree
+et branche, lectures préalables, item confié, critères de DoD associés, fichiers autorisés,
+frontières, validations attendues, livraison, condition d’arrêt. Le plan est toujours la première
+lecture ; les autres lectures sont reproduites sans être ouvertes. Les noms de modèle et d’effort
+sont des textes explicites du brief, indépendants du fournisseur et de l’orchestrateur.
+
+Le [plan repris dans ce dépôt](docs/plans/2026-09-20-001-agent-policy-plan.md) fournit cet exemple
+complet. Adapter le worktree et les rubriques de mission avant usage. Le SHA-256 ci-dessous est
+celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
+`shasum -a 256 docs/plans/<plan>.md` et copier ses passages exacts dans le JSON.
+
+```json
+{
+  "schemaVersion": 1,
+  "model": "modele-exemple",
+  "effort": "high",
+  "thread": { "workstream": "agent-policy", "mode": "nouveau" },
+  "worktree": "/chemin/du/depot/agent-policy",
+  "branch": "feat/agent-policy-brief",
+  "plan": {
+    "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
+    "sha256": "ce215f1e7b4194f57b14fcc8c0de0169312bde898ab32f52a3c9e46fee977ac7",
+    "itemSection": "## 5. Plan",
+    "dodSection": "## 6. DoD"
+  },
+  "prerequisiteReads": ["README.md"],
+  "planStep": {
+    "id": "7",
+    "text": "7. **Prompt de délégation produit par une commande commune** — commande `agent-policy brief` :\n   l'orchestrateur remplit un brief structuré, la commande rend l'en-tête et le bloc à copier au\n   format validé le 2026-09-20 ; une phrase dans `AGENTS.md` la rend obligatoire. (DoD 9)",
+    "dodCriterionIds": ["9"],
+    "validationIds": ["tests"]
+  },
+  "dod": [
+    {
+      "id": "9",
+      "text": "9. Un prompt de délégation a la même forme quel que soit l'orchestrateur, et reprend l'item et la\n   DoD du plan à l'identique ; une reformulation fait échouer la commande."
+    }
+  ],
+  "ownedPaths": ["bin/**", "lib/**", "test/**", "README.md", "package.json"],
+  "boundaries": [
+    "Écriture limitée à ce dépôt ; aucun cast ; aucune lecture de .env.",
+    "Aucun install réel ; aucune modification de ~/.codex, ~/.claude ni de CoproOS."
+  ],
+  "validations": [
+    { "id": "tests", "label": "Tests hors ligne", "command": ["npm", "test"], "timeoutMs": 90000 }
+  ],
+  "delivery": ["PR vers main, sans merger ; rapport avec SHA et nombre de tests."],
+  "stopCondition": "Arrêter et demander si une rubrique du brief est ambiguë."
+}
+```
+
+Tous ces champs sont requis ; les champs inconnus, doublons et références absentes sont refusés.
+`prerequisiteReads` peut être vide puisque le plan est ajouté automatiquement. Les autres listes
+doivent être non vides. `delivery` décrit la livraison propre à la mission, y compris les documents
+à mettre à jour si nécessaire. `stopCondition` contient les conditions explicites d’arrêt.
+Le worktree est un chemin absolu affiché, qui peut désigner un futur worktree ; il n’est pas ouvert.
+Les deux fichiers lus, brief JSON et plan Markdown, sont résolus depuis le répertoire courant.
+Ils doivent rester dans ce dépôt, sans lien symbolique, chemin `.git` ou `.env*`.
+
+Le plan est un fichier UTF-8 sous `docs/plans/`, avec fins de ligne LF. Les deux titres `##`
+référencés sont uniques. Les passages sont des items numérotés `7. …` en colonne 1, dont les
+suites sont indentées d’au moins trois espaces (ou une tabulation). Chaque item se termine par
+son association explicite, par exemple `(DoD 1, 2, 6)`. Les exemples à l’intérieur d’un bloc de
+code ne comptent pas comme des items. Un doublon d’identifiant ou de titre est refusé.
+
+`text` reprend **le passage complet**, numéro, ponctuation, espaces et retours à la ligne compris,
+sans les lignes vides qui le séparent du passage suivant. Aucun `trim`, résumé ou reformulation
+n’est appliqué. Le contrôle vérifie l’empreinte du plan, l’item exact et chacun de ses critères
+exacts ; une simple sous-chaîne ne suffit pas. `dodCriterionIds` doit reprendre tous les critères
+associés dans l’ordre du plan. `validationIds` fixe les validations et leur ordre ; les définitions
+`dod` et `validations` doivent correspondre exactement à ces références. Une erreur écrit un
+diagnostic sur stderr, renvoie un code non nul et ne produit aucun brief partiel.
+
+Le contrat reprend sans Zod les principes de `missionBriefSchema`, `planStepSchema`,
+`dodCriterionSchema`, `ownedPathsSchema` et `validationSchema` de la branche CoproOS
+`feat/local-agent-orchestrator-mvp` : référence de plan avec empreinte, identifiants liés,
+commandes en argv (1 à 30 arguments), délai de 1 000 à 900 000 ms. Le texte intégral remplace
+les résumés `title` / `expectedOutcome` / `label` pour l’item et la DoD. Les rubriques françaises
+reprennent `prompt.ts`, en retirant ses restrictions propres à un fournisseur.
+
+La vérification des fichiers autorisés reprend `assertOwnedPathsSafe` et refuse les chemins
+absolus (POSIX et Windows), antislashs, `..`, segments vides ou `.`, ainsi que les segments
+`.git` et `.env*`, même imbriqués. Les motifs comme `lib/**` restent possibles ; ils déclarent
+un périmètre, sans remplacer la frontière d’écriture de l’agent. La commande affiche les argv
+des validations en protégeant leurs arguments shell ; elle ne les exécute pas et ne leur accorde
+aucune permission. Elle ne reprend pas l’allowlist libre `npx tsx` du prototype CoproOS.
 
 ## Écrire une entrée
 
@@ -289,5 +389,6 @@ Les tests `node:test` couvrent le schéma, toutes les entrées et gardes du socl
 règles, les pièges de préfixe, les sorties, la préservation des hooks et des permissions non-Bash,
 les dérives Bash et les ajouts non-Bash manuels, deux dépôts
 autonomes, `init --upgrade`, le contrôle natif optionnel, la confirmation d’installation,
-les sauvegardes, le retour arrière et les échecs d’écriture. Aucun appel fournisseur, aucun
+les sauvegardes, le retour arrière, les échecs d’écriture, les 31 refus globaux et les 2 wrappers
+simulés, la post-condition Claude et le contrat/rendu exact des briefs. Aucun appel fournisseur, aucun
 paquet téléchargé et aucune installation globale ne sont nécessaires.
