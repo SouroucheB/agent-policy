@@ -3,13 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { applyInstall, prepareInstall, unifiedDiff } from '../lib/system.mjs';
-import { temporary, put, cli } from './helpers.mjs';
+import { temporary, put, cli, mixedClaudeSettings, withoutBash } from './helpers.mjs';
 
 function fixtures(root) {
   const files = {
     '.codex/rules/00-core.rules': '# ancien socle\n',
     '.codex/rules/default.rules': 'prefix_rule(pattern=["npm", "run"], decision="allow")\n',
-    '.claude/settings.json': JSON.stringify({ hooks: { Stop: [{ hooks: [] }] }, model: 'example', permissions: { allow: ['Bash(*)'] } }, null, 2) + '\n',
+    '.claude/settings.json': JSON.stringify(mixedClaudeSettings(), null, 2) + '\n',
   };
   for (const [relative, content] of Object.entries(files)) put(root, relative, content);
   return files;
@@ -40,6 +40,12 @@ test('install --target-root : diff, confirmation exacte, sauvegardes et migratio
   assert.deepEqual(settings.hooks, JSON.parse(before['.claude/settings.json']).hooks);
   assert.equal(settings.model, 'example');
   assert.equal(settings.permissions.allow.includes('Bash(*)'), false);
+  assert.equal(withoutBash(settings), withoutBash(JSON.parse(before['.claude/settings.json'])));
+  assert.equal(JSON.stringify(settings.permissions).includes('Bash(old-'), false);
+  const claudeDiff = result.stdout.split('--- .claude/settings.json\n')[1].split('\n--- ')[0];
+  const changedLines = claudeDiff.split('\n').filter(line => /^[+-]/u.test(line) && line.startsWith('+++') === false);
+  assert.ok(changedLines.length > 0);
+  assert.ok(changedLines.every(line => line.includes('"Bash(')), changedLines.join('\n'));
   const again = cli(root, ['install', '--target-root', root]);
   assert.equal(again.status, 0, again.stderr);
   assert.match(again.stdout, /déjà synchronisé/);

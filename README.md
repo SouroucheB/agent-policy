@@ -22,6 +22,12 @@ checkout. Une installation depuis Git peut aussi être épinglée à un SHA :
 `npm install --global --ignore-scripts 'git+https://github.com/SouroucheB/agent-policy.git#<SHA>'`.
 Aucune étape npm n’applique le socle aux agents. Aucun `postinstall` n’est présent.
 
+**Ordre conseillé : préparer les couches des dépôts avant le socle global.** Dans chaque dépôt,
+exécuter `agent-policy init` (ou `init --upgrade` si le générateur est déjà présent), renseigner
+`agent-policy/policy.json`, puis exécuter `agent-policy build` et `agent-policy check`.
+Cette préparation doit précéder `install`, qui archive `default.rules` et retire donc aussi
+les anciennes autorisations de scripts de projet qu’il contenait.
+
 **À lancer personnellement**, après lecture du diff :
 
 ```sh
@@ -32,7 +38,8 @@ L’outil vise les emplacements standards de la machine, indépendamment des év
 de personnalisation des agents :
 
 - `~/.codex/rules/00-core.rules` ;
-- le bloc `permissions` de `~/.claude/settings.json`, en conservant toutes les autres clés, dont les hooks ;
+- les entrées `Bash(...)` de `permissions.allow`, `permissions.ask` et `permissions.deny` dans
+  `~/.claude/settings.json` ; toutes les permissions non-Bash et les autres clés sont conservées ;
 - l’ancien `~/.codex/rules/default.rules`, **archivé puis retiré du dossier actif** s’il existe.
 
 Laisser `default.rules` actif conserverait ses anciennes autorisations larges. Les autres fichiers
@@ -92,7 +99,7 @@ Structure à versionner dans le projet :
 agent-policy/policy.json              # source du dépôt, vide mais valide à l'initialisation
 scripts/agent-policy/generate.mjs     # copie autonome avec en-tête de version
 .codex/rules/project.rules           # sortie générée
-.claude/settings.json                # permissions générées ; autres clés conservées
+.claude/settings.json                # entrées Bash générées ; autres permissions et clés conservées
 ```
 
 `init` conserve les fichiers existants. `agent-policy init --upgrade` remplace la copie du
@@ -107,9 +114,16 @@ node scripts/agent-policy/generate.mjs check
 
 Pour régénérer avec cette même copie : `node scripts/agent-policy/generate.mjs build`.
 `check` reconstruit les sorties en mémoire, compare les fichiers et vérifie les exemples des deux
-moteurs. Une édition manuelle des sorties fait échouer le contrôle. Les hooks restent modifiables
-normalement ; après un reformatage de `settings.json`, relancer `build` pour sa forme canonique.
-Le bloc `permissions` entier appartient au générateur, y compris ses anciens modes éventuels.
+moteurs. Une édition manuelle des règles Codex ou des entrées Bash générées fait échouer le contrôle.
+Le générateur possède **uniquement les entrées `Bash(...)`** des listes `allow`, `ask` et `deny` :
+les anciennes entrées Bash sont remplacées par celles de la politique. Les entrées `Read`, `Write`,
+`Edit`, `mcp__…` et toutes les autres permissions non-Bash sont conservées dans leur ordre existant,
+y compris dans `deny`. Les autres clés de `permissions`, comme `defaultMode` et
+`additionalDirectories`, ainsi que les hooks et les autres réglages restent également inchangés.
+
+`build` et `install` appliquent cette même règle de conservation, sans reformater le reste du
+document. Ajouter une permission non-Bash à la main, modifier un réglage non possédé ou reformater
+`settings.json` laisse `check` vert tant que les entrées Bash générées restent conformes.
 
 `check --codex` ajoute, si `codex` est installé, un contrôle natif de chaque commande d’exemple
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
@@ -249,7 +263,8 @@ npm test
 ```
 
 Les tests `node:test` couvrent le schéma, toutes les entrées et gardes du socle, la priorité des
-règles, les pièges de préfixe, les sorties, la préservation des hooks, les dérives, deux dépôts
+règles, les pièges de préfixe, les sorties, la préservation des hooks et des permissions non-Bash,
+les dérives Bash et les ajouts non-Bash manuels, deux dépôts
 autonomes, `init --upgrade`, le contrôle natif optionnel, la confirmation d’installation,
 les sauvegardes, le retour arrière et les échecs d’écriture. Aucun appel fournisseur, aucun
 paquet téléchargé et aucune installation globale ne sont nécessaires.

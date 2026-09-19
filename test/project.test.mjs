@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { initProject, readCore } from '../lib/system.mjs';
 import { buildProject, checkProject, checkNativeCodex, PROJECT_FILES } from '../lib/generate.mjs';
-import { temporary, put, cli, policy, entry, ROOT } from './helpers.mjs';
+import { temporary, put, cli, policy, entry, ROOT, mixedClaudeSettings, withoutBash } from './helpers.mjs';
 
 test('init, init répété et upgrade préservent strictement la source', t => {
   const root = temporary(t);
@@ -53,6 +53,37 @@ test('build valide les deux sorties avant toute écriture', t => {
   put(root, PROJECT_FILES.claude, 'JSON invalide');
   assert.throws(() => buildProject(root));
   assert.equal(fs.existsSync(path.join(root, PROJECT_FILES.codex)), false);
+});
+test('build préserve les permissions non-Bash et check accepte leurs modifications manuelles', t => {
+  const root = temporary(t);
+  initProject(root);
+  put(root, PROJECT_FILES.policy, readCore());
+  const before = mixedClaudeSettings();
+  put(root, PROJECT_FILES.claude, before);
+  assert.equal(cli(root, ['build']).status, 0);
+  const target = path.join(root, PROJECT_FILES.claude);
+  const after = JSON.parse(fs.readFileSync(target, 'utf8'));
+  assert.equal(withoutBash(after), withoutBash(before));
+  assert.equal(JSON.stringify(after.permissions).includes('Bash(old-'), false);
+  after.permissions.allow.unshift('Read(extra/**)');
+  after.permissions.ask.splice(2, 0, 'mcp__new__tool');
+  after.permissions.deny.push('Write(extra-protected/**)');
+  after.permissions.defaultMode = 'plan';
+  const manual = JSON.stringify(after, null, '\t');
+  put(root, PROJECT_FILES.claude, manual);
+  assert.equal(cli(root, ['check']).status, 0);
+  buildProject(root);
+  assert.equal(fs.readFileSync(target, 'utf8'), manual);
+  for (const key of ['allow', 'ask', 'deny']) {
+    const drift = structuredClone(after);
+    const index = drift.permissions[key].findIndex(value => value.startsWith('Bash('));
+    drift.permissions[key][index] = 'Bash(manual:*)';
+    put(root, PROJECT_FILES.claude, drift);
+    assert.equal(cli(root, ['check']).status, 1, key);
+    buildProject(root);
+    assert.equal(checkProject(root).count > 0, true);
+    assert.equal(withoutBash(JSON.parse(fs.readFileSync(target, 'utf8'))), withoutBash(after));
+  }
 });
 test('la copie mono-fichier fonctionne hors ligne dans deux dépôts sans outil global', t => {
   for (let i = 0; i < 2; i += 1) {

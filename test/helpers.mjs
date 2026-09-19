@@ -29,3 +29,25 @@ export function entry(overrides = {}) {
     ...overrides,
   };
 }
+export function mixedClaudeSettings() {
+  return {
+    hooks: { Stop: [{ hooks: [] }] }, model: 'example',
+    permissions: {
+      defaultMode: 'default',
+      allow: ['Read(src/**)', 'Bash(old-allow:*)', 'Write(docs/**)', 'Edit(src/**)', 'mcp__drive__read'],
+      additionalDirectories: ['../shared', '../reports'],
+      deny: ['Read(secrets/**)', 'Bash(old-deny:*)', 'mcp__vault__write', 'Write(protected/**)'],
+      ask: ['mcp__github__write', 'Bash(old-ask:*)', 'Edit(config/**)'],
+      disableBypassPermissionsMode: 'disable',
+    },
+  };
+}
+export function withoutBash(settings) {
+  const copy = structuredClone(settings);
+  for (const key of ['allow', 'ask', 'deny']) {
+    if (Array.isArray(copy.permissions?.[key])) {
+      copy.permissions[key] = copy.permissions[key].filter(value => value.startsWith('Bash(') === false || value.endsWith(')') === false);
+    }
+  }
+  return JSON.stringify(copy);
+}

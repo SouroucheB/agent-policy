@@ -5,7 +5,7 @@ import {
   tokenize, decisionFor, matchesClaude,
 } from '../lib/generate.mjs';
 import { readCore } from '../lib/system.mjs';
-import { policy, entry } from './helpers.mjs';
+import { policy, entry, mixedClaudeSettings, withoutBash } from './helpers.mjs';
 
 const core = readCore();
 
@@ -44,9 +44,54 @@ test('génération Codex et Claude équivalente, décision la plus stricte', () 
   const result = JSON.parse(generateClaude(source, JSON.stringify(old)));
   assert.deepEqual(result.hooks, old.hooks);
   assert.deepEqual(result.env, old.env);
-  assert.deepEqual(result.permissions, generatePermissions(source));
+  assert.equal(result.permissions.defaultMode, old.permissions.defaultMode);
+  for (const [key, expected] of Object.entries(generatePermissions(source))) assert.deepEqual(result.permissions[key] ?? [], expected);
   assert.throws(() => generateClaude(source, '[]'), /objet/);
   assert.throws(() => generateClaude(source, '{bad'));
+});
+test('Claude : remplacer seulement Bash et conserver les autres permissions, clés et ordre', () => {
+  const old = mixedClaudeSettings();
+  // Variantes de nombre et de position des anciennes entrées Bash, listes vides incluses.
+  for (const entries of [[], [entry()], core.entries]) {
+    for (const allow of [[], ['Read(src/**)'], ['Bash(old:*)'], ['Read(src/**)', 'Bash(a:*)', 'Write(docs/**)', 'Bash(b:*)', 'Bash(c:*)'], old.permissions.allow]) {
+      const before = { ...old, permissions: { ...old.permissions, allow } };
+      const source = policy(entries);
+      const text = JSON.stringify(before, null, 2) + '\n';
+      const output = generateClaude(source, text);
+      const after = JSON.parse(output);
+      assert.equal(withoutBash(after), withoutBash(before));
+      for (const [key, expected] of Object.entries(generatePermissions(source))) {
+        assert.deepEqual(after.permissions[key].filter(value => value.startsWith('Bash(')), expected);
+      }
+      assert.equal(generateClaude(source, output), output);
+    }
+  }
+});
+test('Claude : conserver le texte hors listes et les échappements des entrées non-Bash', () => {
+  const previous = '{\r\n\t"permissions" : {\r\n\t\t"ask" : [\r\n\t\t\t"Read(src\\u002f**)"  ,\r\n\t\t\t"Bash(old:*)",\r\n\t\t\t"mcp__drive__read"\r\n\t\t],\r\n\t\t"defaultMode": "default"\r\n\t},\r\n\t"custom": {"number": 1e3, "quoted": "[\\\"permissions\\\"]"}\r\n}';
+  const output = generateClaude(policy([entry()]), previous);
+  assert.equal(output, previous.replace('Bash(old:*)', 'Bash(gh pr merge:*)'));
+});
+test('Claude : ajouter les propriétés manquantes sans toucher aux réglages existants', () => {
+  for (const old of [{}, { hooks: { Stop: [] } }, { permissions: { defaultMode: 'default', additionalDirectories: ['../shared'] } }, { permissions: { allow: ['Read(src/**)'] } }]) {
+    for (const indent of [undefined, 2, '\t']) {
+      const text = JSON.stringify(old, null, indent);
+      const output = generateClaude(policy([entry()]), text);
+      const after = JSON.parse(output);
+      assert.deepEqual(after.permissions.ask, ['Bash(gh pr merge:*)']);
+      delete after.permissions.ask;
+      if (old.permissions === undefined) delete after.permissions;
+      assert.equal(JSON.stringify(after), JSON.stringify(old));
+      assert.equal(generateClaude(policy([entry()]), output), output);
+    }
+  }
+});
+test('Claude : refuser une liste invalide avant toute réécriture', () => {
+  for (const key of ['allow', 'ask', 'deny']) {
+    for (const value of [null, {}, 'Read(src/**)', [true]]) {
+      assert.throws(() => generateClaude(policy(), JSON.stringify({ permissions: { [key]: value } })), /liste de chaînes/);
+    }
+  }
 });
 test('tous les exemples du socle, y compris gardes Claude, sont cohérents', () => {
   assert.ok(validateExamples(core) > 250);
