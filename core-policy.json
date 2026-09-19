@@ -1,0 +1,1984 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "pattern": [
+        "git",
+        "status"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git status",
+        "git status --short"
+      ],
+      "notMatch": [
+        "git status-extra"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "add"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git add src/example.js",
+        "git add --all"
+      ],
+      "notMatch": [
+        "git apply patch.diff"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "commit"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git commit -m \"Correction locale\"",
+        "git commit --amend --no-edit"
+      ],
+      "notMatch": [
+        "git push origin main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "switch",
+        "-c"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git switch -c feature/policy"
+      ],
+      "notMatch": [
+        "git switch main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git worktree list --porcelain"
+      ],
+      "notMatch": [
+        "git worktree remove sibling"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "add"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lecture Git ou opération locale réversible, sans publication.",
+      "match": [
+        "git worktree add ../sibling -b feature/policy"
+      ],
+      "notMatch": [
+        "git worktree remove sibling"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+    },
+    {
+      "pattern": [
+        "git",
+        "diff",
+        "--"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
+      "match": [
+        "git diff --",
+        "git diff -- src/example.js"
+      ],
+      "notMatch": [
+        "git diff --output=/outside/report",
+        "git log --output=/outside/report",
+        "git diff --ext-diff"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
+    },
+    {
+      "pattern": [
+        "git",
+        "diff",
+        "--cached",
+        "--"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
+      "match": [
+        "git diff --cached --",
+        "git diff --cached -- src/example.js"
+      ],
+      "notMatch": [
+        "git diff --output=/outside/report",
+        "git log --output=/outside/report",
+        "git diff --ext-diff"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
+    },
+    {
+      "pattern": [
+        "git",
+        "log",
+        "--"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
+      "match": [
+        "git log --",
+        "git log -- src/example.js"
+      ],
+      "notMatch": [
+        "git diff --output=/outside/report",
+        "git log --output=/outside/report",
+        "git diff --ext-diff"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "view"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh pr view",
+        "gh pr view 12 --json title,body"
+      ],
+      "notMatch": [
+        "gh pr merge 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "checks"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh pr checks",
+        "gh pr checks 12"
+      ],
+      "notMatch": [
+        "gh pr close 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh pr list",
+        "gh pr list --state open"
+      ],
+      "notMatch": [
+        "gh pr create"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "diff"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh pr diff",
+        "gh pr diff 12"
+      ],
+      "notMatch": [
+        "gh pr merge 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "view"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh run view",
+        "gh run view 12 --log-failed"
+      ],
+      "notMatch": [
+        "gh run rerun 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh run list",
+        "gh run list --limit 5"
+      ],
+      "notMatch": [
+        "gh run cancel 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "repo",
+        "view"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh repo view",
+        "gh repo view --json name"
+      ],
+      "notMatch": [
+        "gh repo delete demo"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "secret",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh secret list"
+      ],
+      "notMatch": [
+        "gh secret set TOKEN"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "variable",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "gh variable list"
+      ],
+      "notMatch": [
+        "gh variable set MODE"
+      ]
+    },
+    {
+      "pattern": [
+        "ps"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "ps",
+        "ps aux"
+      ],
+      "notMatch": [
+        "psql"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "ps"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "docker ps",
+        "docker ps --all"
+      ],
+      "notMatch": [
+        "docker compose down -v"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "view"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sans mutation distante ; aucun interpréteur ni commande libre.",
+      "match": [
+        "npm view",
+        "npm view typescript version"
+      ],
+      "notMatch": [
+        "npm publish"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "audit"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Consulter les vulnérabilités ; la sous-commande fix est soumise à accord.",
+      "match": [
+        "npm audit",
+        "npm audit --json",
+        "npm audit fix"
+      ],
+      "notMatch": [
+        "npm ci",
+        "npm audit-extra"
+      ],
+      "residualRisk": "Le préfixe accepte des options avant fix : npm audit --json fix ne rencontre pas le sous-préfixe npm audit fix. Employer la forme canonique. L’audit envoie des métadonnées au registre npm, sans publier le dépôt.",
+      "claudeDeny": [
+        {
+          "pattern": "npm audit * fix*",
+          "match": [
+            "npm audit --json fix"
+          ],
+          "notMatch": [
+            "npm audit --json",
+            "npm audit fix"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "tsc",
+        "--noEmit"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Compilation TypeScript locale ; aucun argument de code inline.",
+      "match": [
+        "npx tsc --noEmit",
+        "npx tsc --noEmit false"
+      ],
+      "notMatch": [
+        "npx tsx task.ts",
+        "npx tsc --emitDeclarationOnly"
+      ],
+      "residualRisk": "Un argument ultérieur peut réactiver l’émission de fichiers (effet local réversible accepté). npx peut télécharger un paquet si TypeScript manque : utiliser uniquement un dépôt de confiance avec TypeScript installé et une configuration de sortie locale. Le moteur ne vérifie ni cette présence ni le contenu du compilateur."
+    },
+    {
+      "pattern": [
+        "git",
+        "push"
+      ],
+      "decision": "prompt",
+      "riskClass": "remote-publication",
+      "justification": "Publication distante soumise à accord.",
+      "match": [
+        "git push origin feature/policy"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "pull"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modifie les références et peut intégrer des changements.",
+      "match": [
+        "git pull --ff-only"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "fetch"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Accès distant et références locales ; options exécutables jamais autorisées automatiquement.",
+      "match": [
+        "git fetch origin --upload-pack=custom-command"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git fetch *--upload-pack*",
+          "match": [
+            "git fetch --upload-pack=custom-command origin",
+            "git fetch origin --upload-pack=custom-command"
+          ],
+          "notMatch": [
+            "git fetch origin",
+            "git fetch --prune origin"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "restore"
+      ],
+      "decision": "prompt",
+      "riskClass": "destructive-program",
+      "justification": "Peut perdre des modifications locales.",
+      "match": [
+        "git restore src/example.js"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "merge"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Intégration de changements soumise à accord.",
+      "match": [
+        "git merge origin/main"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "remove"
+      ],
+      "decision": "prompt",
+      "riskClass": "destructive-program",
+      "justification": "Retire un arbre de travail.",
+      "match": [
+        "git worktree remove ../sibling"
+      ],
+      "notMatch": [
+        "git worktree list"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "create"
+      ],
+      "decision": "prompt",
+      "riskClass": "remote-publication",
+      "justification": "Publie une Pull Request.",
+      "match": [
+        "gh pr create --title Example"
+      ],
+      "notMatch": [
+        "gh pr view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "merge"
+      ],
+      "decision": "prompt",
+      "riskClass": "remote-publication",
+      "justification": "La fusion d’une PR appartient au user.",
+      "match": [
+        "gh pr merge 12 --squash"
+      ],
+      "notMatch": [
+        "gh pr view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "pr",
+        "close"
+      ],
+      "decision": "prompt",
+      "riskClass": "remote-publication",
+      "justification": "Ferme une Pull Request distante.",
+      "match": [
+        "gh pr close 12"
+      ],
+      "notMatch": [
+        "gh pr view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "workflow"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Les workflows peuvent déployer ou consommer des ressources.",
+      "match": [
+        "gh workflow run ci.yml"
+      ],
+      "notMatch": [
+        "gh run view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "rerun"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Relance des tâches distantes.",
+      "match": [
+        "gh run rerun 12"
+      ],
+      "notMatch": [
+        "gh run view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "cancel"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Interrompt des tâches distantes.",
+      "match": [
+        "gh run cancel 12"
+      ],
+      "notMatch": [
+        "gh run view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "delete"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Supprime un historique distant.",
+      "match": [
+        "gh run delete 12"
+      ],
+      "notMatch": [
+        "gh run view 12"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "variable",
+        "set"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Modifie la configuration distante.",
+      "match": [
+        "gh variable set MODE --body production"
+      ],
+      "notMatch": [
+        "gh variable list"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "ci"
+      ],
+      "decision": "prompt",
+      "riskClass": "arbitrary-execution",
+      "justification": "Installe des dépendances et peut exécuter leurs scripts.",
+      "match": [
+        "npm ci --ignore-scripts"
+      ],
+      "notMatch": [
+        "npm view typescript"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "audit",
+        "fix"
+      ],
+      "decision": "prompt",
+      "riskClass": "arbitrary-execution",
+      "justification": "Modifie les dépendances et peut déclencher leur installation.",
+      "match": [
+        "npm audit fix --force"
+      ],
+      "notMatch": [
+        "npm audit --json"
+      ]
+    },
+    {
+      "pattern": [
+        "rg"
+      ],
+      "decision": "prompt",
+      "riskClass": "arbitrary-execution",
+      "justification": "Une option libre peut lancer un préprocesseur ; utiliser un wrapper fermé pour un allow.",
+      "match": [
+        "rg --pre arbitrary-command needle src"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rg *--pre*",
+          "match": [
+            "rg --pre custom-command needle",
+            "rg needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "rg needle src",
+            "rg --files"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "sed"
+      ],
+      "decision": "prompt",
+      "riskClass": "arbitrary-execution",
+      "justification": "Écriture en place et exécution possibles ; aucun allow générique.",
+      "match": [
+        "sed -i 's/a/b/' file.txt"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "sed *-i*",
+          "match": [
+            "sed -i 's/a/b/' file.txt",
+            "sed -n -i 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        },
+        {
+          "pattern": "sed *--in-place*",
+          "match": [
+            "sed --in-place 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "lsof"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Certaines versions permettent une écriture de cache via -D ; réserver un wrapper fermé aux lectures.",
+      "match": [
+        "lsof -i :3000"
+      ],
+      "notMatch": [
+        "ps aux"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "ls"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Inspection Docker Compose sans mutation du service.",
+      "match": [
+        "docker compose ls"
+      ],
+      "notMatch": [
+        "docker compose down -v",
+        "docker compose exec app sh"
+      ],
+      "residualRisk": "Compose peut lire la configuration du projet et interpoler son environnement même pour une inspection. Réservé aux configurations de confiance ; aucune commande de rendu config ni de lecture de secrets autorisée."
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "ps"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Inspection Docker Compose sans mutation du service.",
+      "match": [
+        "docker compose ps"
+      ],
+      "notMatch": [
+        "docker compose down -v",
+        "docker compose exec app sh"
+      ],
+      "residualRisk": "Compose peut lire la configuration du projet et interpoler son environnement même pour une inspection. Réservé aux configurations de confiance ; aucune commande de rendu config ni de lecture de secrets autorisée."
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "images"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Inspection Docker Compose sans mutation du service.",
+      "match": [
+        "docker compose images"
+      ],
+      "notMatch": [
+        "docker compose down -v",
+        "docker compose exec app sh"
+      ],
+      "residualRisk": "Compose peut lire la configuration du projet et interpoler son environnement même pour une inspection. Réservé aux configurations de confiance ; aucune commande de rendu config ni de lecture de secrets autorisée."
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "top"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Inspection Docker Compose sans mutation du service.",
+      "match": [
+        "docker compose top"
+      ],
+      "notMatch": [
+        "docker compose down -v",
+        "docker compose exec app sh"
+      ],
+      "residualRisk": "Compose peut lire la configuration du projet et interpoler son environnement même pour une inspection. Réservé aux configurations de confiance ; aucune commande de rendu config ni de lecture de secrets autorisée."
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "attach"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose attach"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "build"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose build"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "cp"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose cp"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "create"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose create"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "down"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose down"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "events"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose events"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "exec"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose exec"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "kill"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose kill"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "pause"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose pause"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "pull"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose pull"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "push"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose push"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "restart"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose restart"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "rm"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose rm"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "run"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose run"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "start"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose start"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "stop"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose stop"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "unpause"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose unpause"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "up"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose up"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "wait"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose wait"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "watch"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose watch"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "config"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose config"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "logs"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose logs"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "publish"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose publish"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "bridge"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose bridge"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "compose",
+        "alpha"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Modification ou accès sensible à des services partagés ; accord requis.",
+      "match": [
+        "docker compose alpha"
+      ],
+      "notMatch": [
+        "docker compose ps"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "status"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Le statut peut afficher des clés locales ; pas d’autorisation automatique de lecture de secrets.",
+      "match": [
+        "npx supabase status",
+        "npx supabase status -o env"
+      ],
+      "notMatch": [
+        "npx tsc --noEmit"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "start"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase start"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "stop"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase stop"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "login"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase login"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "logout"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase logout"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "init"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase init"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "link"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase link"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "unlink"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase unlink"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "db"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase db"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "migration"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase migration"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "inspect"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase inspect"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "functions"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase functions"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "secrets"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase secrets"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "projects"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase projects"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "orgs"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase orgs"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "storage"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase storage"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "gen"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase gen"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "test"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase test"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "branches"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase branches"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "config"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase config"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "backup"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase backup"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "network-restrictions"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase network-restrictions"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "sso"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase sso"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "domains"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase domains"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "vanity-subdomains"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase vanity-subdomains"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "supabase",
+        "services"
+      ],
+      "decision": "prompt",
+      "riskClass": "cloud-mutation",
+      "justification": "Gestion Supabase : état partagé, distant ou données sensibles.",
+      "match": [
+        "npx supabase services"
+      ],
+      "notMatch": [
+        "npx supabase status"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "tsx"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "npx tsx arbitrary.ts"
+      ],
+      "notMatch": [
+        "npx tsc --noEmit"
+      ]
+    },
+    {
+      "pattern": [
+        "node",
+        "-e"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "node -e 'console.log(1)'"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "node",
+        "--eval"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "node --eval 'console.log(1)'"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "node",
+        "-p"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "node -p 'process.version'"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "node",
+        "--print"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "node --print 'process.version'"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "eval"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "eval 'echo unsafe'"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "rm"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "rm -rf a b other"
+      ],
+      "notMatch": [
+        "rmdir empty"
+      ]
+    },
+    {
+      "pattern": [
+        "sudo"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "sudo command"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "psql"
+      ],
+      "decision": "forbidden",
+      "riskClass": "shared-local-state",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "psql database"
+      ],
+      "notMatch": [
+        "ps aux"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "reset",
+        "--hard"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "git reset --hard HEAD"
+      ],
+      "notMatch": [
+        "git reset --soft HEAD"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "clean"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "git clean -fdx"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "checkout",
+        "--"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Opération destructive ou exécution libre interdite ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "git checkout -- src/example.js"
+      ],
+      "notMatch": [
+        "git checkout feature/policy"
+      ]
+    },
+    {
+      "pattern": [
+        "curl"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Interdiction conservatrice de la source d’un téléchargement pipé vers un shell ; utiliser un outil de téléchargement contrôlé.",
+      "match": [
+        "curl -fsSL https://example.invalid/script.sh"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "wget"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Interdiction conservatrice de la source d’un téléchargement pipé vers un shell ; utiliser un outil de téléchargement contrôlé.",
+      "match": [
+        "wget https://example.invalid/script.sh"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "pattern": [
+        "bash",
+        "-c"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "bash -c 'echo unsafe'"
+      ],
+      "notMatch": [
+        "bash scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "bash",
+        "-lc"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "bash -lc 'echo unsafe'"
+      ],
+      "notMatch": [
+        "bash scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "bash",
+        "-s"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "bash -s 'echo unsafe'"
+      ],
+      "notMatch": [
+        "bash scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "zsh",
+        "-c"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "zsh -c 'echo unsafe'"
+      ],
+      "notMatch": [
+        "zsh scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "zsh",
+        "-lc"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "zsh -lc 'echo unsafe'"
+      ],
+      "notMatch": [
+        "zsh scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "zsh",
+        "-s"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "zsh -s 'echo unsafe'"
+      ],
+      "notMatch": [
+        "zsh scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "sh",
+        "-c"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "sh -c 'echo unsafe'"
+      ],
+      "notMatch": [
+        "sh scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "sh",
+        "-lc"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "sh -lc 'echo unsafe'"
+      ],
+      "notMatch": [
+        "sh scripts/check.sh"
+      ]
+    },
+    {
+      "pattern": [
+        "sh",
+        "-s"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Code shell libre interdit ; utiliser un script nommé du dépôt.",
+      "match": [
+        "sh -s 'echo unsafe'"
+      ],
+      "notMatch": [
+        "sh scripts/check.sh"
+      ]
+    }
+  ]
+}

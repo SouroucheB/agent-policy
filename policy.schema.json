@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Politique de commandes agent-policy v1",
+  "description": "La validation runtime ajoute les contrôles de sûreté, de doublons et de cohérence des exemples.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "entries"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pattern",
+        "decision",
+        "riskClass",
+        "justification",
+        "match",
+        "notMatch"
+      ],
+      "properties": {
+        "pattern": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_./:@%+,=\\-]+$"
+          }
+        },
+        "decision": {
+          "enum": [
+            "allow",
+            "prompt",
+            "forbidden"
+          ]
+        },
+        "riskClass": {
+          "enum": [
+            "destructive-program",
+            "remote-publication",
+            "cloud-mutation",
+            "paid-provider",
+            "shared-local-state",
+            "arbitrary-execution",
+            "read-only",
+            "local-reversible"
+          ]
+        },
+        "justification": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "residualRisk": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S"
+        },
+        "match": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "notMatch": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "claudeDeny": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/claudeDeny"
+          }
+        }
+      }
+    },
+    "claudeDeny": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pattern",
+        "match",
+        "notMatch"
+      ],
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_./:@%+,= *\\-]+$"
+        },
+        "match": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        },
+        "notMatch": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\S"
+          }
+        }
+      }
+    }
+  }
+}
