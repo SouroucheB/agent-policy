@@ -88,7 +88,7 @@ test('commandPrefixes : tokens littéraux uniques, expansion unique et exemples 
 
 test('miroir RTK : décisions allow, prompt et forbidden préservées dans les deux moteurs', () => {
   for (const prefix of prefixes) {
-    for (const [command, decision] of [['git status', 'allow'], ['git push origin main', 'prompt'], ['rm -rf directory', 'forbidden'], ['npm audit fix --force', 'prompt']]) {
+    for (const [command, decision] of [['git add file', 'allow'], ['git push origin main', 'prompt'], ['rm -rf directory', 'forbidden'], ['npm audit fix --force', 'prompt']]) {
       assert.equal(decisionFor(core, prefix + command), decision, prefix + command);
       assert.equal(claudeDecision(prefix + command), decision, prefix + command);
     }
@@ -104,9 +104,9 @@ test('miroir RTK : décisions allow, prompt et forbidden préservées dans les d
   assert.throws(() => generateCodex(unsafePrefix), /interpréteur libre/);
 });
 
-test('les commandes RTK propres sont autorisées, avec gardes grep/read/diff et sans doublons', () => {
+test('les lectures RTK propres sont autorisées pour Claude, avec gardes et sans règle Codex', () => {
   for (const command of ['rtk grep needle src', 'rtk read README.md', 'rtk ls src', 'rtk diff before.txt after.txt', 'rtk gain', 'rtk discover', 'rtk session']) {
-    assert.equal(decisionFor(core, command), 'allow', command);
+    assert.equal(decisionFor(core, command), undefined, command);
     assert.equal(claudeDecision(command), 'allow', command);
   }
   for (const prefix of prefixes) {

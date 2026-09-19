@@ -118,7 +118,7 @@ test('arbitrage par préfixe : audit fix, options libres et émission locale', (
     ['npm audit', 'allow'], ['npm audit fix --force', 'prompt'],
     ['npx tsc --noEmit false', 'allow'], ['rg needle --pre=command', 'prompt'],
     ["sed -n -i 's/a/b/' file", 'prompt'], ['git fetch origin --upload-pack=command', 'prompt'],
-    ['git diff -- src/file', 'allow'], ['git diff --output=/outside/report', undefined],
+    ['git diff -- src/file', undefined], ['git diff --output=/outside/report', undefined],
     ['git log --output=/outside/report', undefined], ['lsof -Db/outside/cache', undefined], ['lsof -D', 'prompt'],
     ['docker compose ps', 'allow'], ['docker compose down -v', 'prompt'],
     ['npx supabase status -o env', 'prompt'], ['npx supabase stop', 'prompt'],

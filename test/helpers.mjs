@@ -21,7 +21,8 @@ export function cli(root, args, options = {}) {
     cwd: root, encoding: 'utf8', timeout: 15000, maxBuffer: 4 * 1024 * 1024, ...options,
   });
 }
-export function policy(entries = []) { return { version: 1, entries }; }
+// Les tests unitaires de règles directes désactivent explicitement les miroirs.
+export function policy(entries = []) { return { version: 1, commandPrefixes: [], entries }; }
 export function entry(overrides = {}) {
   return {
     pattern: ['gh', 'pr', 'merge'], decision: 'prompt', riskClass: 'remote-publication',
