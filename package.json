@@ -1,0 +1,13 @@
+{
+  "name": "@souroucheb/agent-policy",
+  "version": "1.0.0",
+  "description": "Source unique de politique de commandes pour Codex et Claude Code",
+  "type": "module",
+  "bin": { "agent-policy": "bin/agent-policy.mjs" },
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "files": ["bin", "lib", "core-policy.json", "policy.schema.json", "README.md"],
+  "repository": { "type": "git", "url": "git+https://github.com/SouroucheB/agent-policy.git" },
+  "license": "UNLICENSED",
+  "private": true
+}
