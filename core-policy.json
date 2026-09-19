@@ -1979,6 +1979,477 @@
       "notMatch": [
         "sh scripts/check.sh"
       ]
+    },
+    {
+      "pattern": [
+        "find",
+        "-delete"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "find -delete target"
+      ],
+      "notMatch": [
+        "find . -delete target",
+        "find . -print"
+      ],
+      "residualRisk": "Codex ne peut pas reconnaître -delete après un chemin ou des options en position libre ; seule la forme find -delete est couverte par le préfixe. La garde Claude couvre les positions libres.",
+      "claudeDeny": [
+        {
+          "pattern": "find *-delete*",
+          "match": [
+            "find . -delete target",
+            "find -delete target"
+          ],
+          "notMatch": [
+            "find . -print",
+            "find . -name example"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "find",
+        "-exec"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "find -exec target"
+      ],
+      "notMatch": [
+        "find . -exec target",
+        "find . -print"
+      ],
+      "residualRisk": "Codex ne peut pas reconnaître -exec après un chemin ou des options en position libre ; seule la forme find -exec est couverte par le préfixe. La garde Claude couvre les positions libres.",
+      "claudeDeny": [
+        {
+          "pattern": "find *-exec*",
+          "match": [
+            "find . -exec target",
+            "find -exec target"
+          ],
+          "notMatch": [
+            "find . -print",
+            "find . -name example"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "perl",
+        "-pi"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "perl -pi -e 's/a/b/' file.txt"
+      ],
+      "notMatch": [
+        "perl -pi.bak -e 's/a/b/' file.txt",
+        "perl -e 'print 1'"
+      ],
+      "residualRisk": "Codex ne sait pas exprimer le suffixe collé dans perl -pi* (par exemple -pi.bak) ; Claude conserve ce refus à joker.",
+      "claudeDeny": [
+        {
+          "pattern": "perl -pi*",
+          "match": [
+            "perl -pi.bak -e 's/a/b/' file.txt",
+            "perl -pi -e 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "perl -e 'print 1'",
+            "perl script.pl"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "perl",
+        "-i"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "perl -i -e 's/a/b/' file.txt"
+      ],
+      "notMatch": [
+        "perl -i.bak -e 's/a/b/' file.txt",
+        "perl -e 'print 1'"
+      ],
+      "residualRisk": "Codex ne sait pas exprimer le suffixe collé dans perl -i* (par exemple -i.bak) ; Claude conserve ce refus à joker.",
+      "claudeDeny": [
+        {
+          "pattern": "perl -i*",
+          "match": [
+            "perl -i.bak -e 's/a/b/' file.txt",
+            "perl -i -e 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "perl -e 'print 1'",
+            "perl script.pl"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "rm"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "docker rm container"
+      ],
+      "notMatch": [
+        "docker ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "rmi"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "docker rmi image"
+      ],
+      "notMatch": [
+        "docker ps"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "system",
+        "prune"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "docker system prune --all"
+      ],
+      "notMatch": [
+        "docker system df"
+      ]
+    },
+    {
+      "pattern": [
+        "docker",
+        "volume",
+        "rm"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "docker volume rm data"
+      ],
+      "notMatch": [
+        "docker volume ls"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "install",
+        "-g"
+      ],
+      "decision": "forbidden",
+      "riskClass": "shared-local-state",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "npm install -g package"
+      ],
+      "notMatch": [
+        "npm install package"
+      ]
+    },
+    {
+      "pattern": [
+        "chmod",
+        "-R",
+        "777"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "chmod -R 777 directory"
+      ],
+      "notMatch": [
+        "chmod 644 file.txt"
+      ]
+    },
+    {
+      "pattern": [
+        "chown",
+        "-R"
+      ],
+      "decision": "forbidden",
+      "riskClass": "destructive-program",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "chown -R user directory"
+      ],
+      "notMatch": [
+        "chown user file.txt"
+      ]
+    },
+    {
+      "pattern": [
+        "python",
+        "-c"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "python -c 'print(1)'"
+      ],
+      "notMatch": [
+        "python script.py"
+      ]
+    },
+    {
+      "pattern": [
+        "python3",
+        "-c"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "python3 -c 'print(1)'"
+      ],
+      "notMatch": [
+        "python3 script.py"
+      ]
+    },
+    {
+      "pattern": [
+        "perl",
+        "-e"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "perl -e 'print 1'"
+      ],
+      "notMatch": [
+        "perl script.pl"
+      ]
+    },
+    {
+      "pattern": [
+        "ruby",
+        "-e"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "ruby -e 'puts 1'"
+      ],
+      "notMatch": [
+        "ruby script.rb"
+      ]
+    },
+    {
+      "pattern": [
+        "php",
+        "-r"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "php -r 'echo 1;'"
+      ],
+      "notMatch": [
+        "php script.php"
+      ]
+    },
+    {
+      "pattern": [
+        "tsx",
+        "-e"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "tsx -e 'console.log(1)'"
+      ],
+      "notMatch": [
+        "tsx script.ts"
+      ]
+    },
+    {
+      "pattern": [
+        "./node_modules/.bin/tsx"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "./node_modules/.bin/tsx script.ts"
+      ],
+      "notMatch": [
+        "node scripts/check.mjs"
+      ]
+    },
+    {
+      "pattern": [
+        "nohup"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus existant ; utiliser un point d’entrée fermé et audité.",
+      "match": [
+        "nohup command"
+      ],
+      "notMatch": [
+        "git status"
+      ]
+    },
+    {
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver les refus de heredocs sans autoriser une écriture shell libre.",
+      "residualRisk": "Codex reçoit des arguments de programme : les redirections et heredocs ne sont pas des tokens argv. Ces refus textuels sont exprimés uniquement par les gardes Claude ; le sandbox reste nécessaire.",
+      "claudeDeny": [
+        {
+          "pattern": "cat <<*",
+          "match": [
+            "cat <<EOF\ntext\nEOF",
+            "cat << EOF"
+          ],
+          "notMatch": [
+            "cat file.txt",
+            "cat < file.txt"
+          ]
+        },
+        {
+          "pattern": "cat > * <<*",
+          "match": [
+            "cat > file.txt <<EOF\ntext\nEOF"
+          ],
+          "notMatch": [
+            "cat file.txt",
+            "cat > file.txt"
+          ]
+        },
+        {
+          "pattern": "cat >> * <<*",
+          "match": [
+            "cat >> file.txt <<EOF\ntext\nEOF"
+          ],
+          "notMatch": [
+            "cat file.txt",
+            "cat >> file.txt"
+          ]
+        },
+        {
+          "pattern": "tee * <<*",
+          "match": [
+            "tee file.txt <<EOF\ntext\nEOF"
+          ],
+          "notMatch": [
+            "tee file.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver les refus des exécutables invoqués par les chemins système concernés.",
+      "residualRisk": "Un prefix_rule Codex ne peut pas appliquer un joker à l’intérieur du token exécutable : /bin/*, /usr/bin/*, /usr/local/bin/* et /opt/homebrew/bin/* restent des gardes Claude uniquement.",
+      "claudeDeny": [
+        {
+          "pattern": "/bin/*",
+          "match": [
+            "/bin/command argument"
+          ],
+          "notMatch": [
+            "command argument",
+            "/other/bin/command argument"
+          ]
+        },
+        {
+          "pattern": "/usr/bin/*",
+          "match": [
+            "/usr/bin/command argument"
+          ],
+          "notMatch": [
+            "command argument",
+            "/other/bin/command argument"
+          ]
+        },
+        {
+          "pattern": "/usr/local/bin/*",
+          "match": [
+            "/usr/local/bin/command argument"
+          ],
+          "notMatch": [
+            "command argument",
+            "/other/bin/command argument"
+          ]
+        },
+        {
+          "pattern": "/opt/homebrew/bin/*",
+          "match": [
+            "/opt/homebrew/bin/command argument"
+          ],
+          "notMatch": [
+            "command argument",
+            "/other/bin/command argument"
+          ]
+        }
+      ]
+    },
+    {
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Conserver le refus des noms de commandes erronés head-* et tail-*.",
+      "residualRisk": "Codex ne peut pas reconnaître un préfixe de caractères dans le nom de programme ; head-* et tail-* restent des gardes Claude uniquement.",
+      "claudeDeny": [
+        {
+          "pattern": "head-*",
+          "match": [
+            "head-n 1 file.txt",
+            "head-custom file.txt"
+          ],
+          "notMatch": [
+            "head -n 1 file.txt"
+          ]
+        },
+        {
+          "pattern": "tail-*",
+          "match": [
+            "tail-n 1 file.txt",
+            "tail-custom file.txt"
+          ],
+          "notMatch": [
+            "tail -n 1 file.txt"
+          ]
+        }
+      ]
     }
   ]
 }

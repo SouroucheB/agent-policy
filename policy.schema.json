@@ -24,12 +24,9 @@
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "pattern",
         "decision",
         "riskClass",
-        "justification",
-        "match",
-        "notMatch"
+        "justification"
       ],
       "properties": {
         "pattern": {
@@ -94,7 +91,46 @@
             "$ref": "#/$defs/claudeDeny"
           }
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "pattern",
+            "match",
+            "notMatch"
+          ]
+        },
+        {
+          "required": [
+            "claudeDeny",
+            "residualRisk"
+          ],
+          "properties": {
+            "decision": {
+              "const": "forbidden"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "pattern"
+                ]
+              },
+              {
+                "required": [
+                  "match"
+                ]
+              },
+              {
+                "required": [
+                  "notMatch"
+                ]
+              }
+            ]
+          }
+        }
+      ]
     },
     "claudeDeny": {
       "type": "object",
@@ -108,7 +144,7 @@
         "pattern": {
           "type": "string",
           "minLength": 1,
-          "pattern": "^[A-Za-z0-9_./:@%+,= *\\-]+$"
+          "pattern": "^[A-Za-z0-9_./:@%+,= *<>\\-]+$"
         },
         "match": {
           "type": "array",

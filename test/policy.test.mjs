@@ -96,7 +96,7 @@ test('Claude : refuser une liste invalide avant toute réécriture', () => {
 test('tous les exemples du socle, y compris gardes Claude, sont cohérents', () => {
   assert.ok(validateExamples(core) > 250);
   for (const rule of core.entries) {
-    for (const example of [...rule.match, ...rule.notMatch]) {
+    for (const example of [...(rule.match ?? []), ...(rule.notMatch ?? [])]) {
       const expected = decisionFor(core, example);
       const permissions = generatePermissions(core);
       const actual = ['deny', 'ask', 'allow'].find(key => permissions[key].some(p => matchesClaude(p, example)));

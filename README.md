@@ -124,6 +124,9 @@ y compris dans `deny`. Les autres clés de `permissions`, comme `defaultMode` et
 `build` et `install` appliquent cette même règle de conservation, sans reformater le reste du
 document. Ajouter une permission non-Bash à la main, modifier un réglage non possédé ou reformater
 `settings.json` laisse `check` vert tant que les entrées Bash générées restent conformes.
+Une post-condition compare les permissions non-Bash, les autres valeurs et leur ordre avec
+l’entrée, puis les listes Bash avec la politique. Tout écart fait échouer la commande avant
+l’écriture des fichiers, y compris pendant une installation.
 
 `check --codex` ajoute, si `codex` est installé, un contrôle natif de chaque commande d’exemple
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
@@ -157,6 +160,12 @@ littéraux**, sans joker, espace interne ni code shell. Les exemples sont des co
 sans pipeline, expansion, redirection ou affectation. Les guillemets des arguments suffixes sont
 acceptés. Les mots du préfixe sont écrits sous leur forme canonique commune aux deux moteurs.
 Un exemple dont la représentation textuelle Claude et les arguments Codex divergent est refusé.
+
+Exception pour un refus inexprimable en préfixe Codex : une entrée `forbidden` peut omettre
+`pattern`, `match` et `notMatch`, à condition de fournir `residualRisk` et `claudeDeny` avec ses
+exemples. Elle ne génère aucune règle Codex fictive. Les exemples des gardes Claude sont du texte
+inerte et peuvent contenir un heredoc ; ils ne sont jamais exécutés. Le matcher textuel des gardes
+ne remplace pas l’analyse shell propre à Claude.
 
 `notMatch` est une **assertion de test**, jamais une exclusion. Ainsi, `rm -rf a b autre` correspond
 bien au préfixe `rm -rf a b` ; le mettre dans `notMatch` est une erreur détectée avant génération.
@@ -219,8 +228,22 @@ Choix explicites du socle après application de ce critère :
 | `npx supabase status` | `prompt` également, car `-o env` peut exposer les clés locales. |
 | `curl` / `wget` | Interdiction conservatrice des commandes entières : un simple préfixe ne sait pas exprimer « seulement lorsqu’il est pipé vers un shell ». Cela bloque la source de ces pipelines ; utiliser un téléchargement contrôlé. |
 
-Le socle ne contient aucun chemin, script CoproOS, SteamBoard ou autre point d’entrée de projet.
-Il reprend les intentions de l’audit, sans recopier les anciennes autorisations larges.
+Le socle n’autorise aucun chemin ni point d’entrée de projet. Ses seuls chemins de refus sont
+l’exécutable standard `./node_modules/.bin/tsx` et les quatre familles d’exécutables absolus
+ci-dessous. Les deux refus `with-env.sh npx tsx -e` et `with-supabase-env.sh npx tsx -e` restent
+dans la couche CoproOS : les tests couvrent 31 refus globaux et ces 2 refus dans une couche simulée.
+
+Les refus ajoutés couvrent aussi les suppressions Docker, l’installation npm globale, `chmod -R
+777`, `chown -R`, le code inline Python/Perl/Ruby/PHP/tsx et `nohup`. Limites expressives de Codex,
+toutes documentées en `residualRisk` dans la source :
+
+| Refus | Limite du préfixe Codex ; garde Claude conservée |
+| --- | --- |
+| `find … -delete`, `find … -exec` | Option après un chemin ou en position libre ; seules les formes commençant par `find -delete` / `find -exec` ont aussi un préfixe Codex. |
+| `perl -pi*`, `perl -i*` | Suffixe collé au même argument, par exemple `.bak` ; les arguments exacts `-pi` et `-i` ont aussi un préfixe Codex. |
+| Heredocs | `cat <<*`, `cat > * <<*`, `cat >> * <<*`, `tee * <<*` portent sur la syntaxe shell, pas sur argv. Les deux anciens motifs de scratchpad sont couverts par `cat > * <<*`. |
+| Exécutables absolus | `/bin/*`, `/usr/bin/*`, `/usr/local/bin/*`, `/opt/homebrew/bin/*` exigent un joker dans le token exécutable. |
+| Noms erronés | `head-*` et `tail-*` exigent également un joker dans le token exécutable. |
 
 ## Où ranger une autorisation ?
 
