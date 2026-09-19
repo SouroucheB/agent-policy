@@ -1,5 +1,14 @@
 {
   "version": 1,
+  "commandPrefixes": [
+    [
+      "rtk"
+    ],
+    [
+      "rtk",
+      "proxy"
+    ]
+  ],
   "entries": [
     {
       "pattern": [
@@ -680,25 +689,15 @@
       ],
       "decision": "prompt",
       "riskClass": "arbitrary-execution",
-      "justification": "Une option libre peut lancer un préprocesseur ; utiliser un wrapper fermé pour un allow.",
+      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
       "match": [
         "rg --pre arbitrary-command needle src"
       ],
       "notMatch": [
         "git status"
       ],
-      "claudeDeny": [
-        {
-          "pattern": "rg *--pre*",
-          "match": [
-            "rg --pre custom-command needle",
-            "rg needle --pre=custom-command"
-          ],
-          "notMatch": [
-            "rg needle src",
-            "rg --files"
-          ]
-        }
+      "engines": [
+        "codex"
       ]
     },
     {
@@ -707,47 +706,15 @@
       ],
       "decision": "prompt",
       "riskClass": "arbitrary-execution",
-      "justification": "Écriture en place et exécution possibles ; aucun allow générique.",
+      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
       "match": [
         "sed -i 's/a/b/' file.txt"
       ],
       "notMatch": [
         "git status"
       ],
-      "claudeDeny": [
-        {
-          "pattern": "sed *-i*",
-          "match": [
-            "sed -i 's/a/b/' file.txt",
-            "sed -n -i 's/a/b/' file.txt"
-          ],
-          "notMatch": [
-            "sed -n '1p' file.txt"
-          ]
-        },
-        {
-          "pattern": "sed *--in-place*",
-          "match": [
-            "sed --in-place 's/a/b/' file.txt"
-          ],
-          "notMatch": [
-            "sed -n '1p' file.txt"
-          ]
-        }
-      ]
-    },
-    {
-      "pattern": [
-        "lsof"
-      ],
-      "decision": "prompt",
-      "riskClass": "shared-local-state",
-      "justification": "Certaines versions permettent une écriture de cache via -D ; réserver un wrapper fermé aux lectures.",
-      "match": [
-        "lsof -i :3000"
-      ],
-      "notMatch": [
-        "ps aux"
+      "engines": [
+        "codex"
       ]
     },
     {
@@ -2450,6 +2417,712 @@
           ]
         }
       ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "grep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk grep needle src"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk grep *.env*",
+          "match": [
+            "rtk grep .env",
+            "rtk grep src/.env.local",
+            "rtk grep -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk grep README.md",
+            "rtk grep src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "rtk grep *--pre*",
+          "match": [
+            "rtk grep --pre custom-command needle",
+            "rtk grep needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "rtk grep needle src",
+            "rtk grep --files"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée. Codex ne peut pas refuser un chemin .env* libre ; la garde correspondante est propre à Claude. RTK grep transmet les options à ripgrep : le sous-préfixe --pre est interdit, mais Codex ne peut pas filtrer --pre en position libre ou --pre=commande ; Claude garde le refus textuel."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "read"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk read README.md"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk read *.env*",
+          "match": [
+            "rtk read .env",
+            "rtk read src/.env.local",
+            "rtk read -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk read README.md",
+            "rtk read src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée. Codex ne peut pas refuser un chemin .env* libre ; la garde correspondante est propre à Claude."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "ls"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk ls src"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "diff"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk diff before.txt after.txt"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk diff *.env*",
+          "match": [
+            "rtk diff .env",
+            "rtk diff src/.env.local",
+            "rtk diff -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk diff README.md",
+            "rtk diff src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée. Codex ne peut pas refuser un chemin .env* libre ; la garde correspondante est propre à Claude."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "gain"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk gain"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "discover"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk discover"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "session"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk session"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance ; les statistiques RTK peuvent écrire leur état local réversible. Le miroir conserve les arguments, sans vérifier les sous-commandes disponibles dans la version installée."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "grep",
+        "--pre"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Un préprocesseur peut exécuter du code ; interdire aussi la forme exprimable en sous-préfixe Codex.",
+      "match": [
+        "rtk grep --pre custom-command needle"
+      ],
+      "notMatch": [
+        "rtk grep needle src"
+      ]
+    },
+    {
+      "pattern": [
+        "ls"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "ls -la src"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "cat"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "cat README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "cat *.env*",
+          "match": [
+            "cat .env",
+            "cat src/.env.local",
+            "cat -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "cat README.md",
+            "cat src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "head"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "head -n 20 README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "head *.env*",
+          "match": [
+            "head .env",
+            "head src/.env.local",
+            "head -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "head README.md",
+            "head src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "tail"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "tail -n 20 README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "tail *.env*",
+          "match": [
+            "tail .env",
+            "tail src/.env.local",
+            "tail -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "tail README.md",
+            "tail src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "grep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "grep needle README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "grep *.env*",
+          "match": [
+            "grep .env",
+            "grep src/.env.local",
+            "grep -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "grep README.md",
+            "grep src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "grep *--pre*",
+          "match": [
+            "grep --pre custom-command needle",
+            "grep needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "grep needle src",
+            "grep --files"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "wc"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "wc -l README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "sort"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "sort names.txt"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les options libres de sort (notamment -o et --compress-program) nécessitent une revue de la commande ; read-only décrit l’usage de lecture demandé, pas tous les argv possibles."
+    },
+    {
+      "pattern": [
+        "rg"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rg needle src"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rg *.env*",
+          "match": [
+            "rg .env",
+            "rg src/.env.local",
+            "rg -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rg README.md",
+            "rg src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "rg *--pre*",
+          "match": [
+            "rg --pre custom-command needle",
+            "rg needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "rg needle src",
+            "rg --files"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "sed",
+        "-n"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "sed -n 1,20p README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "sed *.env*",
+          "match": [
+            "sed .env",
+            "sed src/.env.local",
+            "sed -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "sed README.md",
+            "sed src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "sed *-i*",
+          "match": [
+            "sed -n -i 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        },
+        {
+          "pattern": "sed *--in-place*",
+          "match": [
+            "sed -n --in-place 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. -n désactive l’impression automatique, pas les instructions e/w d’un programme sed ; les gardes .env et écriture en place ne valident pas ce programme."
+    },
+    {
+      "pattern": [
+        "echo"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "echo message"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "printf"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "printf message"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "pgrep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "pgrep node"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "xxd"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "xxd README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. xxd accepte aussi un fichier de sortie et -r ; read-only décrit l’usage de lecture demandé, pas tous les argv possibles."
+    },
+    {
+      "pattern": [
+        "dig"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "dig example.invalid"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "pbpaste"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "pbpaste"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "which"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "which node"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-i"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -i :3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -i -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -i :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-ti"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -ti :3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -ti -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -ti :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-nP"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -nP -iTCP:3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -nP -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -nP :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-D"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Une option de cache peut écrire sur l’état local partagé.",
+      "match": [
+        "lsof -D"
+      ],
+      "notMatch": [
+        "lsof -i :3000"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -D",
+            "lsof -i -Db/cache"
+          ],
+          "notMatch": [
+            "lsof -i :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Codex ne sait pas exprimer -D avec sous-option ou valeur collée, ni après des options de lecture. La garde Claude couvre ces formes textuelles."
     }
   ]
 }

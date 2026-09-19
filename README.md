@@ -13,7 +13,7 @@ Depuis un checkout de cette PR, puis de la version relue et fusionnée :
 npm test
 mkdir -p .agent-tmp
 npm pack --pack-destination .agent-tmp
-npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.1.0.tgz
+npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.2.0.tgz
 agent-policy --help
 ```
 
@@ -259,7 +259,8 @@ Chaque entrée exige au moins un `match` et un `notMatch`. `pattern` est un pré
 littéraux**, sans joker, espace interne ni code shell. Les exemples sont des commandes simples,
 sans pipeline, expansion, redirection ou affectation. Les guillemets des arguments suffixes sont
 acceptés. Les mots du préfixe sont écrits sous leur forme canonique commune aux deux moteurs.
-Un exemple dont la représentation textuelle Claude et les arguments Codex divergent est refusé.
+Un exemple dont la représentation textuelle Claude et les arguments Codex divergent est refusé
+s’il cible les deux moteurs. Chaque exemple est vérifié uniquement contre les moteurs de son entrée.
 
 Exception pour un refus inexprimable en préfixe Codex : une entrée `forbidden` peut omettre
 `pattern`, `match` et `notMatch`, à condition de fournir `residualRisk` et `claudeDeny` avec ses
@@ -276,6 +277,111 @@ Le socle interdit `rm` entier et n’accorde aucune règle `gh pr` générale.
 | `allow` | `allow` | `permissions.allow` |
 | `prompt` | `prompt` | `permissions.ask` |
 | `forbidden` | `forbidden` | `permissions.deny` |
+
+## Cibler les moteurs et conserver RTK
+
+Le champ optionnel `engines` d’une **entrée** est un sous-ensemble non vide, sans doublon, de
+`["codex", "claude"]`. Son absence cible les deux moteurs. Une entrée `engines: ["claude"]`
+n’ajoute aucune règle ni exemple au fichier Codex ; l’inverse vaut pour `["codex"]`. Les gardes
+`claudeDeny` ne sont générées et testées que si Claude est ciblé. La validation structurelle du
+JSON reste commune. Un même motif peut avoir deux entrées si leurs moteurs sont disjoints ; un
+doublon sur le même moteur est refusé. Le contrôle natif `check --codex` ne reçoit que les exemples
+Codex, y compris ceux des miroirs.
+
+`commandPrefixes` est une option à la **racine de la politique**, indépendante de `engines` :
+
+```json
+{
+  "version": 1,
+  "commandPrefixes": [["rtk"], ["rtk", "proxy"]],
+  "entries": [
+    {
+      "pattern": ["git", "status"],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture de l’état du dépôt",
+      "match": ["git status --short"],
+      "notMatch": ["git push origin main"]
+    }
+  ]
+}
+```
+
+La forme directe est conservée. Chaque préfixe argv est ajouté **une seule fois** au motif, aux
+exemples `match`/`notMatch`, et aux motifs et exemples des gardes Claude. La décision et les moteurs
+cibles ne changent pas. Les gardes sans motif argv (heredocs, exécutables absolus, etc.) sont aussi
+miroitées dans Claude. Elles n’inventent aucune règle Codex. Les préfixes sont littéraux, non vides,
+sans doublon ; `commandPrefixes` absent ou vide signifie aucun miroir. Cette option décrit un
+wrapper de confiance qui transmet les arguments ; elle ne lui accorde aucune permission seule.
+Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
+
+| Commande | Codex | Claude |
+| --- | --- | --- |
+| `rtk git status` | allow | allow |
+| `rtk git push origin main` | prompt | ask |
+| `rtk proxy rm file` | forbidden | deny |
+| `rtk rg needle src` | prompt | allow |
+| `rtk proxy cat README.md` | aucune règle du socle | allow |
+| `rtk proxy cat .env` | aucune règle du socle | deny |
+
+Le socle déclare les deux préfixes ci-dessus. Une couche de dépôt peut les déclarer de la même
+façon pour ses propres scripts. Les règles propres `rtk grep`, `rtk read`, `rtk ls`, `rtk diff`,
+`rtk gain`, `rtk discover` et `rtk session` sont autorisées sur les deux moteurs. Leurs formes
+préfixées sont également générées, sans expansion récursive. Les collisions de même motif et
+décision sont dédupliquées dans les sorties (exemples Codex réunis) ; des décisions différentes
+restent soumises à la priorité habituelle. Aucun `rtk` ou `rtk proxy` libre n’est autorisé.
+
+La génération teste la politique, sans exécuter RTK ni les commandes d’exemple. Elle ne garantit
+pas qu’une version de RTK accepte toutes les formes : par exemple, `rtk proxy <commande>` sert à
+transmettre une commande non prise en charge nativement. RTK 0.45.0 a été inspecté avec son aide
+locale : `grep` transmet des options de recherche à ripgrep, `read` accepte plusieurs fichiers,
+et `diff` compare des fichiers. Les statistiques RTK peuvent écrire leur état local réversible.
+La configuration et les filtres RTK doivent être de confiance.
+
+## Lectures Claude et gardes
+
+Le socle autorise pour **Claude uniquement** : `ls`, `cat`, `head`, `tail`, `grep`, `wc`, `sort`,
+`rg`, `sed -n`, `echo`, `printf`, `pgrep`, `xxd`, `dig`, `pbpaste` et `which`. Ces règles évitent une
+demande Bash à chaque lecture. Elles ne modifient pas les permissions de lecture dans le sandbox
+Codex ; `rg` et `sed` restent en `prompt` côté Codex, ainsi que leurs miroirs.
+
+Les entrées allow de `cat`, `head`, `tail`, `grep`, `rg` et `sed` ciblant Claude exigent la garde
+canonique `<commande> *.env*`. `rg` exige aussi `rg *--pre*`. L’exception à l’interdiction de
+`rg`/`sed` en allow exige exactement `engines: ["claude"]`, `riskClass: "read-only"` et ces gardes.
+Pour `sed`, seul le préfixe `sed -n` est accepté ; les gardes `sed *-i*` et `sed *--in-place*`
+conservent les refus d’écriture en place. `grep` porte aussi une garde `--pre`, utile à son miroir
+`rtk grep`, qui transmet les options à ripgrep.
+
+Le miroir reproduit automatiquement ces gardes sous `rtk` et `rtk proxy`. Les commandes propres
+`rtk read`, `rtk grep` et `rtk diff` portent elles aussi les gardes `.env*`, et `rtk grep` la garde
+`--pre`. La forme `rtk grep --pre <programme>` a en plus un préfixe interdit pour les deux moteurs.
+Un refus Claude est prioritaire sur une permission allow, y compris dans un autre motif.
+
+Ces gardes portent sur le **texte de commande** : `.env*` vise les chemins explicites, y compris
+relatifs, absolus et cités, mais peut aussi refuser une recherche où `.env` est le motif. Elles
+ne résolvent pas les liens symboliques, chemins échappés, expansions shell, listes de fichiers
+indirectes ou parcours récursifs implicites. Elles ne constituent pas un contrôle des fichiers
+effectivement ouverts. La frontière d’écriture et les protections de l’agent restent nécessaires.
+`read-only` décrit l’usage demandé : les arguments libres de `sort` (`-o`, `--compress-program`),
+`xxd` (sortie, `-r`) ou le programme de `sed -n` (instructions `e`/`w`) peuvent changer ses effets.
+Ces limites sont explicitées dans `residualRisk` et ne sont pas masquées par le générateur.
+
+`lsof -i`, `lsof -ti` et `lsof -nP` sont autorisés pour les deux moteurs et leurs miroirs. La
+règle générale `lsof` en prompt est retirée, car elle masquerait ces allow. Le préfixe `lsof -D`
+reste en prompt et une garde Claude refuse `-D` à toute position. Les valeurs collées comme
+`lsof -i:3000` / `-ti:3000` ne correspondent pas aux tokens `-i` / `-ti` : elles ne sont pas
+autorisées par le préfixe Codex. Utiliser les formes à tokens séparés, ou `lsof -nP -iTCP:3000`.
+
+Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
+
+| Formes | Limite |
+| --- | --- |
+| Lectures `.env*`, dont `rtk read` / `rtk grep` / `rtk diff` | Aucun filtrage des noms de fichiers par un préfixe argv. Les gardes de chemins sont propres à Claude ; les entrées Claude seules restent absentes de Codex. |
+| `npm audit … fix`, `git fetch … --upload-pack`, `rg … --pre`, `sed … -i/--in-place` | Impossible de filtrer une option en position libre ; `fetch`, `rg` et `sed` restent en prompt Codex. |
+| `rtk grep … --pre` ou `--pre=commande` | Le sous-préfixe exact `rtk grep --pre` est interdit ; les autres positions et valeurs collées échappent à ce préfixe Codex. |
+| `lsof … -D…`, `lsof -i:…`, `lsof -ti:…` | Options en position libre ou valeurs collées ; les formes `-i` / `-ti` / `-nP` autorisent encore des arguments suivants, même `-D`, côté Codex. |
+| `find … -delete/-exec`, `perl -pi*` / `-i*` | Position libre ou suffixe dans un token, comme pour les formes directes. |
+| Heredocs, `/bin/*`, `/usr/bin/*`, `/usr/local/bin/*`, `/opt/homebrew/bin/*`, `head-*`, `tail-*` | Syntaxe shell ou joker à l’intérieur du token exécutable ; gardes Claude seules. |
 
 La priorité est `forbidden > prompt > allow`. Une permission Claude canonique est
 `Bash(gh pr merge:*)`. Un `prompt` général ne permet donc aucune exception `allow` plus précise :
@@ -295,7 +401,8 @@ Question par préfixe : **la variante peut-elle nuire seule, sans étape préala
 - Configuration préalable nécessaire, ou effet local réversible accepté : expliquer la limite
   dans le champ optionnel `residualRisk`. `npx tsc --noEmit false` reste ainsi autorisé.
 - Option libre suffisante pour exécuter une commande ou écrire hors dépôt : aucun `allow`
-  générique, comme pour `rg`, `sed` et `git fetch`.
+  générique Codex pour `rg`, `sed` et `git fetch`. L’exception Claude demandée pour `rg` et
+  `sed -n` est bornée aux moteurs et gardes décrits ci-dessus.
 
 Les gardes supplémentaires Claude se déclarent dans la **même source**, avec leurs propres tests :
 
@@ -309,7 +416,8 @@ Les gardes supplémentaires Claude se déclarent dans la **même source**, avec 
 ]
 ```
 
-Ce champ optionnel ajoute seulement des `deny`. Il ne peut jamais assouplir la décision commune.
+Ce champ optionnel ajoute seulement des `deny` lorsque Claude est ciblé. Il ne peut jamais
+assouplir la décision de l’entrée pour ce moteur.
 Les jokers sont des correspondances textuelles, potentiellement plus restrictives, sans analyse
 exhaustive des options combinées. Le générateur ne prétend pas inspecter le contenu d’un wrapper.
 Un script nommé doit lui-même refuser les arguments libres, le chargement de secrets non prévu et
@@ -321,7 +429,7 @@ Choix explicites du socle après application de ce critère :
 | --- | --- |
 | `git diff`, `git log` | Lectures autorisées avec fin des options : `git diff --`, `git diff --cached --`, `git log --`. `--ext-diff` dépendrait d’une configuration préalable, mais `--output` peut à lui seul écrire hors dépôt, d’où cette restriction. |
 | Git local | Hooks, filtres et pager existants supposés de confiance ; aucun `git -c …` n’est autorisé globalement. La création de worktree est l’opération locale réversible expressément prévue. |
-| `lsof` | `prompt` : certaines plateformes permettent `-Db<chemin>` pour écrire un cache. Une lecture portable fermée appartient à un wrapper de dépôt. |
+| `lsof` | Lectures `-i`, `-ti`, `-nP` autorisées explicitement. `-D` reste soumis à accord en préfixe Codex et refusé par garde Claude ; les options suffixes et valeurs collées restent une limite Codex. |
 | `npm audit` | `fix` canonique en `prompt`. Codex ne couvre pas `npm audit --json fix` avec ce sous-préfixe ; la limite est dans `residualRisk` et Claude dispose d’un refus supplémentaire. |
 | `npx tsc --noEmit` | Compilateur installé et configuration locale de confiance nécessaires ; le préfixe ne vérifie pas leur présence. `npx` peut télécharger un paquet absent. Réactivation de l’émission acceptée comme effet local réversible. |
 | `docker compose` | Lectures `ls`, `ps`, `images`, `top` distinguées des mutations. La lecture de configuration/environnement par Compose suppose un projet de confiance, explicitée dans `residualRisk`. |
@@ -390,5 +498,6 @@ règles, les pièges de préfixe, les sorties, la préservation des hooks et des
 les dérives Bash et les ajouts non-Bash manuels, deux dépôts
 autonomes, `init --upgrade`, le contrôle natif optionnel, la confirmation d’installation,
 les sauvegardes, le retour arrière, les échecs d’écriture, les 31 refus globaux et les 2 wrappers
-simulés, la post-condition Claude et le contrat/rendu exact des briefs. Aucun appel fournisseur, aucun
+simulés (formes directes et RTK), la post-condition Claude, le contrat/rendu exact des briefs,
+le ciblage `engines`, les miroirs et les gardes de lecture. Aucun appel fournisseur, aucun
 paquet téléchargé et aucune installation globale ne sont nécessaires.
