@@ -1,23 +1,15 @@
 {
   "version": 1,
+  "commandPrefixes": [
+    [
+      "rtk"
+    ],
+    [
+      "rtk",
+      "proxy"
+    ]
+  ],
   "entries": [
-    {
-      "pattern": [
-        "git",
-        "status"
-      ],
-      "decision": "allow",
-      "riskClass": "read-only",
-      "justification": "Lecture Git ou opération locale réversible, sans publication.",
-      "match": [
-        "git status",
-        "git status --short"
-      ],
-      "notMatch": [
-        "git status-extra"
-      ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
-    },
     {
       "pattern": [
         "git",
@@ -73,23 +65,6 @@
       "pattern": [
         "git",
         "worktree",
-        "list"
-      ],
-      "decision": "allow",
-      "riskClass": "read-only",
-      "justification": "Lecture Git ou opération locale réversible, sans publication.",
-      "match": [
-        "git worktree list --porcelain"
-      ],
-      "notMatch": [
-        "git worktree remove sibling"
-      ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
-    },
-    {
-      "pattern": [
-        "git",
-        "worktree",
         "add"
       ],
       "decision": "allow",
@@ -102,67 +77,6 @@
         "git worktree remove sibling"
       ],
       "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
-    },
-    {
-      "pattern": [
-        "git",
-        "diff",
-        "--"
-      ],
-      "decision": "allow",
-      "riskClass": "read-only",
-      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
-      "match": [
-        "git diff --",
-        "git diff -- src/example.js"
-      ],
-      "notMatch": [
-        "git diff --output=/outside/report",
-        "git log --output=/outside/report",
-        "git diff --ext-diff"
-      ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
-    },
-    {
-      "pattern": [
-        "git",
-        "diff",
-        "--cached",
-        "--"
-      ],
-      "decision": "allow",
-      "riskClass": "read-only",
-      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
-      "match": [
-        "git diff --cached --",
-        "git diff --cached -- src/example.js"
-      ],
-      "notMatch": [
-        "git diff --output=/outside/report",
-        "git log --output=/outside/report",
-        "git diff --ext-diff"
-      ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
-    },
-    {
-      "pattern": [
-        "git",
-        "log",
-        "--"
-      ],
-      "decision": "allow",
-      "riskClass": "read-only",
-      "justification": "Lecture Git avec fin des options explicite pour empêcher une cible --output libre.",
-      "match": [
-        "git log --",
-        "git log -- src/example.js"
-      ],
-      "notMatch": [
-        "git diff --output=/outside/report",
-        "git log --output=/outside/report",
-        "git diff --ext-diff"
-      ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --ext-diff seul dépendrait d’une configuration préalable ; --output suffit en revanche à écrire hors dépôt, donc les lectures autorisées ferment les options."
     },
     {
       "pattern": [
@@ -680,25 +594,15 @@
       ],
       "decision": "prompt",
       "riskClass": "arbitrary-execution",
-      "justification": "Une option libre peut lancer un préprocesseur ; utiliser un wrapper fermé pour un allow.",
+      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
       "match": [
         "rg --pre arbitrary-command needle src"
       ],
       "notMatch": [
         "git status"
       ],
-      "claudeDeny": [
-        {
-          "pattern": "rg *--pre*",
-          "match": [
-            "rg --pre custom-command needle",
-            "rg needle --pre=custom-command"
-          ],
-          "notMatch": [
-            "rg needle src",
-            "rg --files"
-          ]
-        }
+      "engines": [
+        "codex"
       ]
     },
     {
@@ -707,47 +611,15 @@
       ],
       "decision": "prompt",
       "riskClass": "arbitrary-execution",
-      "justification": "Écriture en place et exécution possibles ; aucun allow générique.",
+      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
       "match": [
         "sed -i 's/a/b/' file.txt"
       ],
       "notMatch": [
         "git status"
       ],
-      "claudeDeny": [
-        {
-          "pattern": "sed *-i*",
-          "match": [
-            "sed -i 's/a/b/' file.txt",
-            "sed -n -i 's/a/b/' file.txt"
-          ],
-          "notMatch": [
-            "sed -n '1p' file.txt"
-          ]
-        },
-        {
-          "pattern": "sed *--in-place*",
-          "match": [
-            "sed --in-place 's/a/b/' file.txt"
-          ],
-          "notMatch": [
-            "sed -n '1p' file.txt"
-          ]
-        }
-      ]
-    },
-    {
-      "pattern": [
-        "lsof"
-      ],
-      "decision": "prompt",
-      "riskClass": "shared-local-state",
-      "justification": "Certaines versions permettent une écriture de cache via -D ; réserver un wrapper fermé aux lectures.",
-      "match": [
-        "lsof -i :3000"
-      ],
-      "notMatch": [
-        "ps aux"
+      "engines": [
+        "codex"
       ]
     },
     {
@@ -2450,6 +2322,2873 @@
           ]
         }
       ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "grep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk grep needle src"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk grep *.env*",
+          "match": [
+            "rtk grep .env",
+            "rtk grep src/.env.local",
+            "rtk grep -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk grep README.md",
+            "rtk grep src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "rtk grep *--pre*",
+          "match": [
+            "rtk grep --pre custom-command needle",
+            "rtk grep needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "rtk grep needle src",
+            "rtk grep --files"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "read"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk read README.md"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk read *.env*",
+          "match": [
+            "rtk read .env",
+            "rtk read src/.env.local",
+            "rtk read -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk read README.md",
+            "rtk read src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "ls"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk ls src"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "diff"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk diff before.txt after.txt"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rtk diff *.env*",
+          "match": [
+            "rtk diff .env",
+            "rtk diff src/.env.local",
+            "rtk diff -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rtk diff README.md",
+            "rtk diff src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "gain"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk gain"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "discover"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk discover"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "session"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rtk session"
+      ],
+      "notMatch": [
+        "rtk git status"
+      ],
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "grep",
+        "--pre"
+      ],
+      "decision": "forbidden",
+      "riskClass": "arbitrary-execution",
+      "justification": "Un préprocesseur peut exécuter du code ; interdire aussi la forme exprimable en sous-préfixe Codex.",
+      "match": [
+        "rtk grep --pre custom-command needle"
+      ],
+      "notMatch": [
+        "rtk grep needle src"
+      ]
+    },
+    {
+      "pattern": [
+        "ls"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "ls -la src"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "cat"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "cat README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "cat *.env*",
+          "match": [
+            "cat .env",
+            "cat src/.env.local",
+            "cat -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "cat README.md",
+            "cat src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "head"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "head -n 20 README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "head *.env*",
+          "match": [
+            "head .env",
+            "head src/.env.local",
+            "head -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "head README.md",
+            "head src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "tail"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "tail -n 20 README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "tail *.env*",
+          "match": [
+            "tail .env",
+            "tail src/.env.local",
+            "tail -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "tail README.md",
+            "tail src/main.mjs"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "grep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "grep needle README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "grep *.env*",
+          "match": [
+            "grep .env",
+            "grep src/.env.local",
+            "grep -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "grep README.md",
+            "grep src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "grep *--pre*",
+          "match": [
+            "grep --pre custom-command needle",
+            "grep needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "grep needle src",
+            "grep --files"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "wc"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "wc -l README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "sort"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "sort names.txt"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les options libres de sort (notamment -o et --compress-program) nécessitent une revue de la commande ; read-only décrit l’usage de lecture demandé, pas tous les argv possibles."
+    },
+    {
+      "pattern": [
+        "rg"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "rg needle src"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "rg *.env*",
+          "match": [
+            "rg .env",
+            "rg src/.env.local",
+            "rg -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "rg README.md",
+            "rg src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "rg *--pre*",
+          "match": [
+            "rg --pre custom-command needle",
+            "rg needle --pre=custom-command"
+          ],
+          "notMatch": [
+            "rg needle src",
+            "rg --files"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+    },
+    {
+      "pattern": [
+        "sed",
+        "-n"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "sed -n 1,20p README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "sed *.env*",
+          "match": [
+            "sed .env",
+            "sed src/.env.local",
+            "sed -- \"config/.env.production\""
+          ],
+          "notMatch": [
+            "sed README.md",
+            "sed src/main.mjs"
+          ]
+        },
+        {
+          "pattern": "sed *-i*",
+          "match": [
+            "sed -n -i 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        },
+        {
+          "pattern": "sed *--in-place*",
+          "match": [
+            "sed -n --in-place 's/a/b/' file.txt"
+          ],
+          "notMatch": [
+            "sed -n '1p' file.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. -n désactive l’impression automatique, pas les instructions e/w d’un programme sed ; les gardes .env et écriture en place ne valident pas ce programme."
+    },
+    {
+      "pattern": [
+        "echo"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "echo message"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "printf"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "printf message"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "pgrep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "pgrep node"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "xxd"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "xxd README.md"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. xxd accepte aussi un fichier de sortie et -r ; read-only décrit l’usage de lecture demandé, pas tous les argv possibles."
+    },
+    {
+      "pattern": [
+        "dig"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "dig example.invalid"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "pbpaste"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "pbpaste"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "which"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "which node"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-i"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -i :3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -i -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -i :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-ti"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -ti :3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -ti -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -ti :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-nP"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture demandée explicitement, sans autorisation générique de wrapper.",
+      "match": [
+        "lsof -nP -iTCP:3000"
+      ],
+      "notMatch": [
+        "lsof -D"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -nP -Db/cache",
+            "lsof -D"
+          ],
+          "notMatch": [
+            "lsof -nP :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+    },
+    {
+      "pattern": [
+        "lsof",
+        "-D"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Une option de cache peut écrire sur l’état local partagé.",
+      "match": [
+        "lsof -D"
+      ],
+      "notMatch": [
+        "lsof -i :3000"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "lsof *-D*",
+          "match": [
+            "lsof -D",
+            "lsof -i -Db/cache"
+          ],
+          "notMatch": [
+            "lsof -i :3000"
+          ]
+        }
+      ],
+      "residualRisk": "Codex ne sait pas exprimer -D avec sous-option ou valeur collée, ni après des options de lecture. La garde Claude couvre ces formes textuelles."
+    },
+    {
+      "pattern": [
+        "git",
+        "status"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git status --short"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x status"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git status *--output*",
+          "match": [
+            "git status --output=value",
+            "git status --short --output=value"
+          ],
+          "notMatch": [
+            "git status --short"
+          ]
+        },
+        {
+          "pattern": "git status *--ext-diff*",
+          "match": [
+            "git status --ext-diff=value",
+            "git status --short --ext-diff=value"
+          ],
+          "notMatch": [
+            "git status --short"
+          ]
+        },
+        {
+          "pattern": "git status *--upload-pack*",
+          "match": [
+            "git status --upload-pack=value",
+            "git status --short --upload-pack=value"
+          ],
+          "notMatch": [
+            "git status --short"
+          ]
+        },
+        {
+          "pattern": "git status -c*",
+          "match": [
+            "git status -c name=value"
+          ],
+          "notMatch": [
+            "git status --short"
+          ]
+        },
+        {
+          "pattern": "git status * -c*",
+          "match": [
+            "git status --help -c name=value"
+          ],
+          "notMatch": [
+            "git status --short"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "diff"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git diff --stat"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x diff"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git diff *--output*",
+          "match": [
+            "git diff --output=value",
+            "git diff --stat --output=value"
+          ],
+          "notMatch": [
+            "git diff --stat"
+          ]
+        },
+        {
+          "pattern": "git diff *--ext-diff*",
+          "match": [
+            "git diff --ext-diff=value",
+            "git diff --stat --ext-diff=value"
+          ],
+          "notMatch": [
+            "git diff --stat"
+          ]
+        },
+        {
+          "pattern": "git diff *--upload-pack*",
+          "match": [
+            "git diff --upload-pack=value",
+            "git diff --stat --upload-pack=value"
+          ],
+          "notMatch": [
+            "git diff --stat"
+          ]
+        },
+        {
+          "pattern": "git diff -c*",
+          "match": [
+            "git diff -c name=value"
+          ],
+          "notMatch": [
+            "git diff --stat"
+          ]
+        },
+        {
+          "pattern": "git diff * -c*",
+          "match": [
+            "git diff --help -c name=value"
+          ],
+          "notMatch": [
+            "git diff --stat"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "log"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git log --oneline -8"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x log"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git log *--output*",
+          "match": [
+            "git log --output=value",
+            "git log --oneline -8 --output=value"
+          ],
+          "notMatch": [
+            "git log --oneline -8"
+          ]
+        },
+        {
+          "pattern": "git log *--ext-diff*",
+          "match": [
+            "git log --ext-diff=value",
+            "git log --oneline -8 --ext-diff=value"
+          ],
+          "notMatch": [
+            "git log --oneline -8"
+          ]
+        },
+        {
+          "pattern": "git log *--upload-pack*",
+          "match": [
+            "git log --upload-pack=value",
+            "git log --oneline -8 --upload-pack=value"
+          ],
+          "notMatch": [
+            "git log --oneline -8"
+          ]
+        },
+        {
+          "pattern": "git log -c*",
+          "match": [
+            "git log -c name=value"
+          ],
+          "notMatch": [
+            "git log --oneline -8"
+          ]
+        },
+        {
+          "pattern": "git log * -c*",
+          "match": [
+            "git log --help -c name=value"
+          ],
+          "notMatch": [
+            "git log --oneline -8"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "show"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git show abc:path"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x show"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git show *--output*",
+          "match": [
+            "git show --output=value",
+            "git show abc:path --output=value"
+          ],
+          "notMatch": [
+            "git show abc:path"
+          ]
+        },
+        {
+          "pattern": "git show *--ext-diff*",
+          "match": [
+            "git show --ext-diff=value",
+            "git show abc:path --ext-diff=value"
+          ],
+          "notMatch": [
+            "git show abc:path"
+          ]
+        },
+        {
+          "pattern": "git show *--upload-pack*",
+          "match": [
+            "git show --upload-pack=value",
+            "git show abc:path --upload-pack=value"
+          ],
+          "notMatch": [
+            "git show abc:path"
+          ]
+        },
+        {
+          "pattern": "git show -c*",
+          "match": [
+            "git show -c name=value"
+          ],
+          "notMatch": [
+            "git show abc:path"
+          ]
+        },
+        {
+          "pattern": "git show * -c*",
+          "match": [
+            "git show --help -c name=value"
+          ],
+          "notMatch": [
+            "git show abc:path"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "rev-parse"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git rev-parse --short HEAD"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x rev-parse"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git rev-parse *--output*",
+          "match": [
+            "git rev-parse --output=value",
+            "git rev-parse --short HEAD --output=value"
+          ],
+          "notMatch": [
+            "git rev-parse --short HEAD"
+          ]
+        },
+        {
+          "pattern": "git rev-parse *--ext-diff*",
+          "match": [
+            "git rev-parse --ext-diff=value",
+            "git rev-parse --short HEAD --ext-diff=value"
+          ],
+          "notMatch": [
+            "git rev-parse --short HEAD"
+          ]
+        },
+        {
+          "pattern": "git rev-parse *--upload-pack*",
+          "match": [
+            "git rev-parse --upload-pack=value",
+            "git rev-parse --short HEAD --upload-pack=value"
+          ],
+          "notMatch": [
+            "git rev-parse --short HEAD"
+          ]
+        },
+        {
+          "pattern": "git rev-parse -c*",
+          "match": [
+            "git rev-parse -c name=value"
+          ],
+          "notMatch": [
+            "git rev-parse --short HEAD"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * -c*",
+          "match": [
+            "git rev-parse --help -c name=value"
+          ],
+          "notMatch": [
+            "git rev-parse --short HEAD"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "grep"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git grep needle"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x grep"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git grep *--output*",
+          "match": [
+            "git grep --output=value",
+            "git grep needle --output=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep *--ext-diff*",
+          "match": [
+            "git grep --ext-diff=value",
+            "git grep needle --ext-diff=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep *--upload-pack*",
+          "match": [
+            "git grep --upload-pack=value",
+            "git grep needle --upload-pack=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep -c*",
+          "match": [
+            "git grep -c name=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep * -c*",
+          "match": [
+            "git grep --help -c name=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep *--open-files-in-pager*",
+          "match": [
+            "git grep --open-files-in-pager=program needle"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep -O*",
+          "match": [
+            "git grep -Oprogram needle"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep * -O*",
+          "match": [
+            "git grep needle -Oprogram"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "ls-files"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git ls-files"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x ls-files"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git ls-files *--output*",
+          "match": [
+            "git ls-files --output=value",
+            "git ls-files --output=value"
+          ],
+          "notMatch": [
+            "git ls-files"
+          ]
+        },
+        {
+          "pattern": "git ls-files *--ext-diff*",
+          "match": [
+            "git ls-files --ext-diff=value",
+            "git ls-files --ext-diff=value"
+          ],
+          "notMatch": [
+            "git ls-files"
+          ]
+        },
+        {
+          "pattern": "git ls-files *--upload-pack*",
+          "match": [
+            "git ls-files --upload-pack=value",
+            "git ls-files --upload-pack=value"
+          ],
+          "notMatch": [
+            "git ls-files"
+          ]
+        },
+        {
+          "pattern": "git ls-files -c*",
+          "match": [
+            "git ls-files -c name=value"
+          ],
+          "notMatch": [
+            "git ls-files"
+          ]
+        },
+        {
+          "pattern": "git ls-files * -c*",
+          "match": [
+            "git ls-files --help -c name=value"
+          ],
+          "notMatch": [
+            "git ls-files"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "ls-tree"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git ls-tree HEAD"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x ls-tree"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git ls-tree *--output*",
+          "match": [
+            "git ls-tree --output=value",
+            "git ls-tree HEAD --output=value"
+          ],
+          "notMatch": [
+            "git ls-tree HEAD"
+          ]
+        },
+        {
+          "pattern": "git ls-tree *--ext-diff*",
+          "match": [
+            "git ls-tree --ext-diff=value",
+            "git ls-tree HEAD --ext-diff=value"
+          ],
+          "notMatch": [
+            "git ls-tree HEAD"
+          ]
+        },
+        {
+          "pattern": "git ls-tree *--upload-pack*",
+          "match": [
+            "git ls-tree --upload-pack=value",
+            "git ls-tree HEAD --upload-pack=value"
+          ],
+          "notMatch": [
+            "git ls-tree HEAD"
+          ]
+        },
+        {
+          "pattern": "git ls-tree -c*",
+          "match": [
+            "git ls-tree -c name=value"
+          ],
+          "notMatch": [
+            "git ls-tree HEAD"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * -c*",
+          "match": [
+            "git ls-tree --help -c name=value"
+          ],
+          "notMatch": [
+            "git ls-tree HEAD"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "blame"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git blame README.md"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x blame"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git blame *--output*",
+          "match": [
+            "git blame --output=value",
+            "git blame README.md --output=value"
+          ],
+          "notMatch": [
+            "git blame README.md"
+          ]
+        },
+        {
+          "pattern": "git blame *--ext-diff*",
+          "match": [
+            "git blame --ext-diff=value",
+            "git blame README.md --ext-diff=value"
+          ],
+          "notMatch": [
+            "git blame README.md"
+          ]
+        },
+        {
+          "pattern": "git blame *--upload-pack*",
+          "match": [
+            "git blame --upload-pack=value",
+            "git blame README.md --upload-pack=value"
+          ],
+          "notMatch": [
+            "git blame README.md"
+          ]
+        },
+        {
+          "pattern": "git blame -c*",
+          "match": [
+            "git blame -c name=value"
+          ],
+          "notMatch": [
+            "git blame README.md"
+          ]
+        },
+        {
+          "pattern": "git blame * -c*",
+          "match": [
+            "git blame --help -c name=value"
+          ],
+          "notMatch": [
+            "git blame README.md"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "remote",
+        "-v"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git remote -v"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x remote"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git remote -v *--output*",
+          "match": [
+            "git remote -v --output=value",
+            "git remote -v --output=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        },
+        {
+          "pattern": "git remote -v *--ext-diff*",
+          "match": [
+            "git remote -v --ext-diff=value",
+            "git remote -v --ext-diff=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        },
+        {
+          "pattern": "git remote -v *--upload-pack*",
+          "match": [
+            "git remote -v --upload-pack=value",
+            "git remote -v --upload-pack=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        },
+        {
+          "pattern": "git remote -v -c*",
+          "match": [
+            "git remote -v -c name=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        },
+        {
+          "pattern": "git remote -v * -c*",
+          "match": [
+            "git remote -v --help -c name=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement. Les sous-commandes de mutation après -v sont soumises à accord par claudeAsk.",
+      "claudeAsk": [
+        {
+          "pattern": "git remote -v add*",
+          "match": [
+            "git remote -v add target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * add*",
+          "match": [
+            "git remote -v --verbose add target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v rename*",
+          "match": [
+            "git remote -v rename target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * rename*",
+          "match": [
+            "git remote -v --verbose rename target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v remove*",
+          "match": [
+            "git remote -v remove target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * remove*",
+          "match": [
+            "git remote -v --verbose remove target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v rm*",
+          "match": [
+            "git remote -v rm target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * rm*",
+          "match": [
+            "git remote -v --verbose rm target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v set-head*",
+          "match": [
+            "git remote -v set-head target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * set-head*",
+          "match": [
+            "git remote -v --verbose set-head target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v set-branches*",
+          "match": [
+            "git remote -v set-branches target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * set-branches*",
+          "match": [
+            "git remote -v --verbose set-branches target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v set-url*",
+          "match": [
+            "git remote -v set-url target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * set-url*",
+          "match": [
+            "git remote -v --verbose set-url target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v prune*",
+          "match": [
+            "git remote -v prune target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * prune*",
+          "match": [
+            "git remote -v --verbose prune target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v update*",
+          "match": [
+            "git remote -v update target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        },
+        {
+          "pattern": "git remote -v * update*",
+          "match": [
+            "git remote -v --verbose update target"
+          ],
+          "notMatch": [
+            "git remote -v",
+            "git remote -v get-url origin"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "stash",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git stash list"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x stash"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git stash list *--output*",
+          "match": [
+            "git stash list --output=value",
+            "git stash list --output=value"
+          ],
+          "notMatch": [
+            "git stash list"
+          ]
+        },
+        {
+          "pattern": "git stash list *--ext-diff*",
+          "match": [
+            "git stash list --ext-diff=value",
+            "git stash list --ext-diff=value"
+          ],
+          "notMatch": [
+            "git stash list"
+          ]
+        },
+        {
+          "pattern": "git stash list *--upload-pack*",
+          "match": [
+            "git stash list --upload-pack=value",
+            "git stash list --upload-pack=value"
+          ],
+          "notMatch": [
+            "git stash list"
+          ]
+        },
+        {
+          "pattern": "git stash list -c*",
+          "match": [
+            "git stash list -c name=value"
+          ],
+          "notMatch": [
+            "git stash list"
+          ]
+        },
+        {
+          "pattern": "git stash list * -c*",
+          "match": [
+            "git stash list --help -c name=value"
+          ],
+          "notMatch": [
+            "git stash list"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "tag",
+        "--list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git tag --list"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x tag"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git tag --list *--output*",
+          "match": [
+            "git tag --list --output=value",
+            "git tag --list --output=value"
+          ],
+          "notMatch": [
+            "git tag --list"
+          ]
+        },
+        {
+          "pattern": "git tag --list *--ext-diff*",
+          "match": [
+            "git tag --list --ext-diff=value",
+            "git tag --list --ext-diff=value"
+          ],
+          "notMatch": [
+            "git tag --list"
+          ]
+        },
+        {
+          "pattern": "git tag --list *--upload-pack*",
+          "match": [
+            "git tag --list --upload-pack=value",
+            "git tag --list --upload-pack=value"
+          ],
+          "notMatch": [
+            "git tag --list"
+          ]
+        },
+        {
+          "pattern": "git tag --list -c*",
+          "match": [
+            "git tag --list -c name=value"
+          ],
+          "notMatch": [
+            "git tag --list"
+          ]
+        },
+        {
+          "pattern": "git tag --list * -c*",
+          "match": [
+            "git tag --list --help -c name=value"
+          ],
+          "notMatch": [
+            "git tag --list"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "list"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git worktree list --porcelain"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x worktree"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git worktree list *--output*",
+          "match": [
+            "git worktree list --output=value",
+            "git worktree list --porcelain --output=value"
+          ],
+          "notMatch": [
+            "git worktree list --porcelain"
+          ]
+        },
+        {
+          "pattern": "git worktree list *--ext-diff*",
+          "match": [
+            "git worktree list --ext-diff=value",
+            "git worktree list --porcelain --ext-diff=value"
+          ],
+          "notMatch": [
+            "git worktree list --porcelain"
+          ]
+        },
+        {
+          "pattern": "git worktree list *--upload-pack*",
+          "match": [
+            "git worktree list --upload-pack=value",
+            "git worktree list --porcelain --upload-pack=value"
+          ],
+          "notMatch": [
+            "git worktree list --porcelain"
+          ]
+        },
+        {
+          "pattern": "git worktree list -c*",
+          "match": [
+            "git worktree list -c name=value"
+          ],
+          "notMatch": [
+            "git worktree list --porcelain"
+          ]
+        },
+        {
+          "pattern": "git worktree list * -c*",
+          "match": [
+            "git worktree list --help -c name=value"
+          ],
+          "notMatch": [
+            "git worktree list --porcelain"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+    },
+    {
+      "pattern": [
+        "git",
+        "branch"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "git branch --no-merged origin/main",
+        "git branch feature"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git -C /x branch"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git branch *--output*",
+          "match": [
+            "git branch --output=value",
+            "git branch --no-merged origin/main --output=value"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main"
+          ]
+        },
+        {
+          "pattern": "git branch *--ext-diff*",
+          "match": [
+            "git branch --ext-diff=value",
+            "git branch --no-merged origin/main --ext-diff=value"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main"
+          ]
+        },
+        {
+          "pattern": "git branch *--upload-pack*",
+          "match": [
+            "git branch --upload-pack=value",
+            "git branch --no-merged origin/main --upload-pack=value"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main"
+          ]
+        }
+      ],
+      "claudeAsk": [
+        {
+          "pattern": "git branch -d*",
+          "match": [
+            "git branch -d feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -d*",
+          "match": [
+            "git branch --verbose -d feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -D*",
+          "match": [
+            "git branch -D feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -D*",
+          "match": [
+            "git branch --verbose -D feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -m*",
+          "match": [
+            "git branch -m feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -m*",
+          "match": [
+            "git branch --verbose -m feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -M*",
+          "match": [
+            "git branch -M feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -M*",
+          "match": [
+            "git branch --verbose -M feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -c*",
+          "match": [
+            "git branch -c feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -c*",
+          "match": [
+            "git branch --verbose -c feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -C*",
+          "match": [
+            "git branch -C feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -C*",
+          "match": [
+            "git branch --verbose -C feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --set-upstream-to*",
+          "match": [
+            "git branch --set-upstream-to feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --set-upstream-to*",
+          "match": [
+            "git branch --verbose --set-upstream-to feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --unset-upstream*",
+          "match": [
+            "git branch --unset-upstream feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --unset-upstream*",
+          "match": [
+            "git branch --verbose --unset-upstream feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -u*",
+          "match": [
+            "git branch -u feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -u*",
+          "match": [
+            "git branch --verbose -u feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch -f*",
+          "match": [
+            "git branch -f feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * -f*",
+          "match": [
+            "git branch --verbose -f feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --delete*",
+          "match": [
+            "git branch --delete feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --delete*",
+          "match": [
+            "git branch --verbose --delete feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --move*",
+          "match": [
+            "git branch --move feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --move*",
+          "match": [
+            "git branch --verbose --move feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --copy*",
+          "match": [
+            "git branch --copy feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --copy*",
+          "match": [
+            "git branch --verbose --copy feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --force*",
+          "match": [
+            "git branch --force feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --force*",
+          "match": [
+            "git branch --verbose --force feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --edit-description*",
+          "match": [
+            "git branch --edit-description feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --edit-description*",
+          "match": [
+            "git branch --verbose --edit-description feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch --create-reflog*",
+          "match": [
+            "git branch --create-reflog feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        },
+        {
+          "pattern": "git branch * --create-reflog*",
+          "match": [
+            "git branch --verbose --create-reflog feature"
+          ],
+          "notMatch": [
+            "git branch --no-merged origin/main",
+            "git branch feature"
+          ]
+        }
+      ],
+      "residualRisk": "La création locale sans option est autorisée. Les options de mutation citées exigent un accord ; les gardes sont textuelles et ne décomposent pas tous les groupes d’options courtes."
+    },
+    {
+      "pattern": [
+        "pwd"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "pwd"
+      ],
+      "notMatch": [
+        "pwd-other"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "date"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "date -u"
+      ],
+      "notMatch": [
+        "date-other"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "node",
+        "--version"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "node --version"
+      ],
+      "notMatch": [
+        "node -e code"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "npm",
+        "--version"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "npm --version"
+      ],
+      "notMatch": [
+        "npm run arbitrary"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "codex",
+        "--version"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "codex --version"
+      ],
+      "notMatch": [
+        "codex exec task"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "--version"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "match": [
+        "rtk --version"
+      ],
+      "notMatch": [
+        "rtk run code"
+      ],
+      "engines": [
+        "claude"
+      ]
+    },
+    {
+      "pattern": [
+        "npx",
+        "vitest",
+        "run"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Runner de tests local demandé ; la configuration et les tests du dépôt sont supposés de confiance.",
+      "match": [
+        "npx vitest run",
+        "npx vitest run test/example.test.ts"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "residualRisk": "Les arguments suffixes et la configuration des tests peuvent modifier les effets locaux. Le runner installé et les scripts du dépôt doivent être de confiance ; aucun wrapper RTK libre n’est autorisé."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "vitest"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Runner de tests local demandé ; la configuration et les tests du dépôt sont supposés de confiance.",
+      "match": [
+        "rtk vitest",
+        "rtk vitest test/example.test.ts"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "residualRisk": "Les arguments suffixes et la configuration des tests peuvent modifier les effets locaux. Le runner installé et les scripts du dépôt doivent être de confiance ; aucun wrapper RTK libre n’est autorisé."
+    },
+    {
+      "pattern": [
+        "npx",
+        "playwright",
+        "test"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Runner de tests local demandé ; la configuration et les tests du dépôt sont supposés de confiance.",
+      "match": [
+        "npx playwright test",
+        "npx playwright test test/example.spec.ts"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "residualRisk": "Les arguments suffixes et la configuration des tests peuvent modifier les effets locaux. Le runner installé et les scripts du dépôt doivent être de confiance ; aucun wrapper RTK libre n’est autorisé."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "playwright",
+        "test"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Runner de tests local demandé ; la configuration et les tests du dépôt sont supposés de confiance.",
+      "match": [
+        "rtk playwright test",
+        "rtk playwright test test/example.spec.ts"
+      ],
+      "notMatch": [
+        "git status"
+      ],
+      "residualRisk": "Les arguments suffixes et la configuration des tests peuvent modifier les effets locaux. Le runner installé et les scripts du dépôt doivent être de confiance ; aucun wrapper RTK libre n’est autorisé."
+    },
+    {
+      "pattern": [
+        "rtk",
+        "vitest",
+        "run"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Forme explicite de lancement des tests ; rtk vitest couvre aussi la forme du hook.",
+      "match": [
+        "rtk vitest run"
+      ],
+      "notMatch": [
+        "rtk vitest --watch"
+      ]
+    },
+    {
+      "pattern": [
+        "rtk",
+        "tsc",
+        "--noEmit"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Forme native RTK de npx tsc --noEmit, même décision.",
+      "match": [
+        "rtk tsc --noEmit",
+        "rtk tsc --noEmit false"
+      ],
+      "notMatch": [
+        "rtk tsc --build"
+      ],
+      "residualRisk": "Compilateur installé et configuration de confiance ; réactivation de l’émission acceptée comme effet local réversible, comme pour npx tsc --noEmit."
+    },
+    {
+      "pattern": [
+        "mkdir",
+        "-p"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Écriture locale réversible sur chemins relatifs explicites ; Codex reste dans son sandbox.",
+      "match": [
+        "mkdir -p docs/plans"
+      ],
+      "notMatch": [
+        "mkdir-other file"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "mkdir *.env*",
+          "match": [
+            "mkdir docs/.env.local"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *..*",
+          "match": [
+            "mkdir ../outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir /*",
+          "match": [
+            "mkdir /outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir * /*",
+          "match": [
+            "mkdir file /outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir \"/*",
+          "match": [
+            "mkdir \"/outside\""
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir * \"/*",
+          "match": [
+            "mkdir file \"/outside\""
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir '/*",
+          "match": [
+            "mkdir '/outside'"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir * '/*",
+          "match": [
+            "mkdir file '/outside'"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *=/*",
+          "match": [
+            "mkdir --target-directory=/outside file"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *~*",
+          "match": [
+            "mkdir ~/outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *$*",
+          "match": [
+            "mkdir $HOME/outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *`*",
+          "match": [
+            "mkdir `command`"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        },
+        {
+          "pattern": "mkdir *\\*",
+          "match": [
+            "mkdir \\/outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
+    },
+    {
+      "pattern": [
+        "cp"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Écriture locale réversible sur chemins relatifs explicites ; Codex reste dans son sandbox.",
+      "match": [
+        "cp README.md docs/copy.md"
+      ],
+      "notMatch": [
+        "cp-other file"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "cp *.env*",
+          "match": [
+            "cp docs/.env.local"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *..*",
+          "match": [
+            "cp ../outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp /*",
+          "match": [
+            "cp /outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp * /*",
+          "match": [
+            "cp file /outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp \"/*",
+          "match": [
+            "cp \"/outside\""
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp * \"/*",
+          "match": [
+            "cp file \"/outside\""
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp '/*",
+          "match": [
+            "cp '/outside'"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp * '/*",
+          "match": [
+            "cp file '/outside'"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *=/*",
+          "match": [
+            "cp --target-directory=/outside file"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *~*",
+          "match": [
+            "cp ~/outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *$*",
+          "match": [
+            "cp $HOME/outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *`*",
+          "match": [
+            "cp `command`"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *\\*",
+          "match": [
+            "cp \\/outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        },
+        {
+          "pattern": "cp *-t*",
+          "match": [
+            "cp -t/outside file",
+            "cp --target-directory=docs file"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
+    },
+    {
+      "pattern": [
+        "touch"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Écriture locale réversible sur chemins relatifs explicites ; Codex reste dans son sandbox.",
+      "match": [
+        "touch docs/notes.md"
+      ],
+      "notMatch": [
+        "touch-other file"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "touch *.env*",
+          "match": [
+            "touch docs/.env.local"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *..*",
+          "match": [
+            "touch ../outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch /*",
+          "match": [
+            "touch /outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch * /*",
+          "match": [
+            "touch file /outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch \"/*",
+          "match": [
+            "touch \"/outside\""
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch * \"/*",
+          "match": [
+            "touch file \"/outside\""
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch '/*",
+          "match": [
+            "touch '/outside'"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch * '/*",
+          "match": [
+            "touch file '/outside'"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *=/*",
+          "match": [
+            "touch --target-directory=/outside file"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *~*",
+          "match": [
+            "touch ~/outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *$*",
+          "match": [
+            "touch $HOME/outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *`*",
+          "match": [
+            "touch `command`"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *\\*",
+          "match": [
+            "touch \\/outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        },
+        {
+          "pattern": "touch *-r/*",
+          "match": [
+            "touch -r/outside file"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
     }
   ]
 }

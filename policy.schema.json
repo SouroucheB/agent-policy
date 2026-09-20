@@ -17,6 +17,23 @@
       "items": {
         "$ref": "#/$defs/entry"
       }
+    },
+    "commandPrefixes": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "Préfixes argv ajoutés une seule fois. Absence : rtk et rtk proxy, y compris dans une couche de dépôt. Liste vide : désactivation explicite.",
+      "items": {
+        "$ref": "#/$defs/argvPrefix"
+      },
+      "default": [
+        [
+          "rtk"
+        ],
+        [
+          "rtk",
+          "proxy"
+        ]
+      ]
     }
   },
   "$defs": {
@@ -90,6 +107,30 @@
           "items": {
             "$ref": "#/$defs/claudeDeny"
           }
+        },
+        "engines": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "codex",
+              "claude"
+            ]
+          },
+          "default": [
+            "codex",
+            "claude"
+          ],
+          "description": "Moteurs cibles de cette entrée et de ses exemples ; absent signifie les deux."
+        },
+        "claudeAsk": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/claudeDeny"
+          },
+          "description": "Gardes Claude soumises à accord, prioritaires sur allow et inférieures à deny."
         }
       },
       "oneOf": [
@@ -144,7 +185,7 @@
         "pattern": {
           "type": "string",
           "minLength": 1,
-          "pattern": "^[A-Za-z0-9_./:@%+,= *<>\\-]+$"
+          "pattern": "^[A-Za-z0-9_./:@%+,= *<>\"'~$`\\\\\\-]+$"
         },
         "match": {
           "type": "array",
@@ -164,6 +205,14 @@
             "pattern": "\\S"
           }
         }
+      }
+    },
+    "argvPrefix": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_./:@%+,=\\-]+$"
       }
     }
   }

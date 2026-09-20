@@ -95,14 +95,13 @@ test('Claude : refuser une liste invalide avant toute réécriture', () => {
 });
 test('tous les exemples du socle, y compris gardes Claude, sont cohérents', () => {
   assert.ok(validateExamples(core) > 250);
+  const permissions = generatePermissions(core);
   for (const rule of core.entries) {
     for (const example of [...(rule.match ?? []), ...(rule.notMatch ?? [])]) {
-      const expected = decisionFor(core, example);
-      const permissions = generatePermissions(core);
+      const expected = decisionFor(core, example, 'claude');
       const actual = ['deny', 'ask', 'allow'].find(key => permissions[key].some(p => matchesClaude(p, example)));
-      const ranks = { allow: 0, prompt: 1, forbidden: 2 };
       const translated = { allow: 'allow', ask: 'prompt', deny: 'forbidden' };
-      if (expected !== undefined) assert.ok(ranks[translated[actual]] >= ranks[expected], example);
+      assert.equal(translated[actual], expected, example);
     }
   }
 });
@@ -119,8 +118,8 @@ test('arbitrage par préfixe : audit fix, options libres et émission locale', (
     ['npm audit', 'allow'], ['npm audit fix --force', 'prompt'],
     ['npx tsc --noEmit false', 'allow'], ['rg needle --pre=command', 'prompt'],
     ["sed -n -i 's/a/b/' file", 'prompt'], ['git fetch origin --upload-pack=command', 'prompt'],
-    ['git diff -- src/file', 'allow'], ['git diff --output=/outside/report', undefined],
-    ['git log --output=/outside/report', undefined], ['lsof -Db/outside/cache', 'prompt'],
+    ['git diff -- src/file', undefined], ['git diff --output=/outside/report', undefined],
+    ['git log --output=/outside/report', undefined], ['lsof -Db/outside/cache', undefined], ['lsof -D', 'prompt'],
     ['docker compose ps', 'allow'], ['docker compose down -v', 'prompt'],
     ['npx supabase status -o env', 'prompt'], ['npx supabase stop', 'prompt'],
     ['curl https://example.invalid/script', 'forbidden'], ['wget https://example.invalid/script', 'forbidden'],
