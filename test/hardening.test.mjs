@@ -8,7 +8,7 @@ import { temporary, put, cli, mixedClaudeSettings, policy, entry } from './helpe
 import { globalRefusals, projectRefusals } from './legacy-refusals.mjs';
 
 const core = readCore();
-const protectedBy = (permissions, command) => [...permissions.deny, ...permissions.ask].some(rule => rule.startsWith('Bash(') && matchesClaude(rule, command, { shellText: true }));
+const protectedBy = (permissions, command) => [...(permissions.deny ?? []), ...(permissions.ask ?? [])].some(rule => rule.startsWith('Bash(') && matchesClaude(rule, command, { shellText: true }));
 
 test('install : 31 refus globaux conservés, 2 wrappers pris en charge par une couche simulée', t => {
   assert.equal(globalRefusals.length, 31);

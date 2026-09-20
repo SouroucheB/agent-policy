@@ -250,3 +250,17 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 - Le mécanisme d'allowlist exacte par plan du harness n'est pas modifié ; seules ses listes de
   refus changent de source.
 - Aucune modification de `~/.codex` ou `~/.claude` avant l'item 2, qui commence par une sauvegarde.
+
+## 9. Réalisation de l’item 8 — frontière d’écriture commune
+
+`init` dépose le garde autonome versionné `scripts/claude-worktree-write-guard.cjs` et sa
+déclaration `PreToolUse` pour Bash, Write, Edit et MultiEdit. `init --upgrade` rafraîchit
+le garde ; une déclaration CoproOS existante est réutilisée. Une post-condition protège
+tous les autres hooks, permissions, réglages et leur ordre avant toute écriture.
+
+La reprise ne dépend d’aucun élément propre à CoproOS. Les tests repris sont complétés
+par les chemins relatifs, les liens symboliques, les changements de répertoire, les
+miroirs RTK, la préservation des réglages et l’idempotence. Le README décrit les limites
+du contrôle préalable Bash, les scripts de confiance et l’exécution hors sandbox des
+commandes autorisées côté Codex. Aucun hook Codex, aucune modification du socle, aucune
+installation globale et aucune écriture dans CoproOS ne font partie de cette réalisation.
