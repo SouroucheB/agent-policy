@@ -32,15 +32,17 @@ test('session courante : lectures Claude, tests RTK et mutations soumises à acc
   }
   const codex = generateCodex(core);
   const gitReads = core.entries.filter(rule => rule.pattern?.[0] === 'git' && rule.engines?.includes('claude') && rule.decision === 'allow');
+  const codexReads = new Set(['git status', 'git diff', 'git log', 'git show', 'git rev-parse', 'git ls-files', 'git grep', 'git worktree list', 'git merge-tree']);
   assert.equal(gitReads.length, 15);
   for (const rule of gitReads) {
     assert.deepEqual(rule.engines, ['claude']);
     for (const prefix of [[], ...DEFAULT_COMMAND_PREFIXES]) {
       const pattern = [...prefix, ...rule.pattern];
-      assert.equal(codex.includes(`pattern=${JSON.stringify(pattern)},`), false, pattern.join(' '));
+      const allowed = codexReads.has(rule.pattern.join(' '));
+      assert.equal(codex.includes(`pattern=${JSON.stringify(pattern)},`), allowed, pattern.join(' '));
       for (const example of rule.match) {
         const command = [...prefix, example].join(' ');
-        assert.equal(decisionFor(core, command), undefined, command);
+        assert.equal(decisionFor(core, command), allowed ? 'allow' : undefined, command);
         assert.equal(claudeDecision(command), 'allow', command);
       }
     }
@@ -136,8 +138,8 @@ test('utilitaires et écritures relatives : Claude seul, chemins exclus même so
 // Relevé avec `rtk rewrite` 0.45.0 ; les tests restent hors ligne et sans dépendance RTK.
 test('formes natives produites par le hook RTK : même décision que la commande source', () => {
   const fixtures = [
-    ['git status', 'rtk git status', undefined, 'allow'],
-    ['git diff --stat', 'rtk git diff --stat', undefined, 'allow'],
+    ['git status', 'rtk git status', 'allow', 'allow'],
+    ['git diff --stat', 'rtk git diff --stat', 'allow', 'allow'],
     ['git push origin main', 'rtk git push origin main', 'prompt', 'prompt'],
     ['gh pr view 1', 'rtk gh pr view 1', 'allow', 'allow'],
     ['gh pr merge 1', 'rtk gh pr merge 1', 'prompt', 'prompt'],

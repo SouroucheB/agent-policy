@@ -179,7 +179,7 @@ L’API renvoie `'allow'`, `'prompt'`, `'forbidden'` ou `undefined` en l’absen
 Par exemple : `git push` et `rtk git push` → `prompt`, `rm -rf x` → `forbidden`,
 `npm run test:gate` → `allow` si ce script est autorisé par la couche du projet,
 commande inconnue → `undefined`. `undefined` ne vaut pas autorisation de sortir du sandbox.
-Le choix du moteur est explicite : les lectures Claude ne créent aucune règle Codex.
+Le choix du moteur est explicite : les entrées `engines: ["claude"]` ne créent aucune règle Codex.
 
 Les commandes acceptées sont des chaînes représentant un argv simple, selon la grammaire du
 générateur : pas de pipeline, redirection, expansion ni enchaînement shell. Un moteur inconnu,
@@ -223,9 +223,19 @@ Formats pris en charge et limites :
   **conteneurs non analysés** : leur code n’est ni évalué ni supposé représenter un Bash.
 - `&&`, `||`, `;`, sauts de ligne et pipelines simples sont décomposés en tenant compte
   des guillemets. Le résultat le plus strict des segments gagne ; une absence de règle
-  empêche le composé d’être compté comme allow. Les substitutions, redirections et
-  structures shell complexes sont signalées comme non analysées ; elles peuvent conserver
-  un prompt/deny textuel connu, mais jamais devenir allow par simple préfixe.
+  empêche le composé d’être compté comme allow. Les redirections bénignes `2>&1`,
+  `2>/dev/null`, `>/dev/null` et `&>/dev/null` sont retirées avant l’évaluation de chaque
+  segment, comme pour les permissions Bash de Claude Code. Espaces ou tabulations avant
+  `/dev/null` sont admis ; les guillemets et échappements restent des arguments littéraux.
+  Le retrait conserve les frontières des mots et ne masque jamais le segment suivant.
+- Les **syntaxes non analysées** sont ventilées en quatre causes fixes : redirection vers
+  fichier (ou autre redirection non prise en charge), substitution, structure shell, heredoc.
+  Une commande compte une fois, dans la cause du premier obstacle rencontré par l’analyseur.
+  Les autres redirections, dont `<`, `>>`, les autres descripteurs et destinations, restent
+  non analysées ; `<<-` et les here-strings `<<<` rejoignent la catégorie heredoc. Un
+  prompt/deny textuel connu peut être conservé, jamais un allow par simple préfixe.
+  Ces totaux incluent donc aussi des commandes prompt/forbidden ; ils ne sont pas synonymes
+  du verdict `aucune`. Les conteneurs JavaScript Codex gardent leur compteur séparé.
 - Les lignes JSON invalides, appels invalides et doublons sont comptés sans afficher leur
   contenu. Les sorties d’outils et le texte conversationnel ne sont pas des commandes.
 
@@ -262,7 +272,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "09662a48af27eb469a65dc3dd52b916052fb9cd9da80bc7af6f9ba2099187505",
+    "sha256": "009a2aa34dd183c241b710948bb6e0d9b07008598f40aae8e51a99531fe6ce0f",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },
@@ -391,7 +401,10 @@ confinés au workspace. Une exception explicite autorise désormais les filtres 
 documente la sortie du sandbox, notamment `rg --pre`, le miroir natif `rtk grep --pre` et les
 options libres de `sort`. `sed`, `awk` et `uniq` restent sans règle Codex : pour `uniq`, une
 règle de préfixe ne saurait garantir l’absence d’un argument désignant un fichier de sortie.
-Les lectures Git, les autres utilitaires et les écritures relatives ciblent Claude seul.
+Une seconde exception explicite autorise les neuf lectures Git détaillées plus bas, afin
+qu’un composé comme `rg --files src && git diff --check && lsof -ti :3001` soit allow
+segment par segment, même si `lsof` demande une sortie du sandbox. Les autres lectures Git,
+utilitaires et écritures relatives continuent de cibler Claude seul.
 `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés conservent
 leurs autorisations pour les deux moteurs.
 Les lectures réseau `gh pr checks` et `gh run view` restent également en allow pour les deux
@@ -429,7 +442,7 @@ Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
 
 | Commande | Codex | Claude |
 | --- | --- | --- |
-| `rtk git status` | aucune règle du socle | allow |
+| `rtk git status` | allow | allow |
 | `rtk git push origin main` | prompt | ask |
 | `rtk proxy rm file` | forbidden | deny |
 | `rtk rg needle src` | allow | allow |
@@ -498,13 +511,29 @@ Le générateur refuse cette exception si une garde obligatoire manque. Les test
 Les autres motifs allow avec joker interne restent interdits. La garde `merge` respecte la
 frontière du mot pour ne pas bloquer la lecture `merge-tree`.
 
-Les lectures Git directes restent autorisées uniquement pour Claude : `status`, `diff`, `log`,
+Les lectures Git directes sont autorisées pour Claude : `status`, `diff`, `log`,
 `show`, `rev-parse`, `grep`, `ls-files`, `ls-tree`, `blame`, `remote -v`, `stash list`,
 `tag --list`, `worktree list`. `merge-tree` est classé `local-reversible` : son mode moderne
 crée des objets Git sans modifier les branches, l’index ou le worktree.
 `git branch` permet aussi la création locale ; `-d`, `-D`, `-m`, `-M`, `-c`, `-C`, `-u`, `-f`,
 `--set-upstream-to`, `--unset-upstream` et leurs alias de mutation demandent un accord.
 `git remote -v` garde ses protections contre les sous-commandes de mutation.
+
+Codex reçoit aussi des entrées explicites pour `git status`, `diff`, `log`, `show`, `rev-parse`,
+`ls-files`, `grep`, `worktree list` et `merge-tree`, avec leurs miroirs `rtk` et `rtk proxy`.
+Ces allow autorisent une exécution hors sandbox. Leurs `residualRisk` documentent les options
+libres non filtrables par préfixe : `--ext-diff` peut exécuter un programme externe et
+`--output` écrire un fichier, pour les sous-commandes qui les acceptent. Le risque est accepté
+explicitement, comme `rg --pre`. Pour `git grep`, `-O<programme>` /
+`--open-files-in-pager=<programme>` peut lancer un programme choisi par l’appelant, sans
+configuration préalable : ce risque supplémentaire est également accepté. La confiance dans
+la configuration Git, ses filtres et son pager existants reste une hypothèse. Les gardes
+Claude restent applicables à Claude ; elles ne filtrent pas les arguments Codex.
+
+**Aucune règle Codex pour `git branch --list`.** `--no-list` peut annuler le mode lecture :
+`git branch --list --no-list -D <branche>` permettrait une suppression sous le même préfixe.
+Le gain ne justifie pas ce risque, selon l’arbitrage du user. Cette exclusion concerne aussi
+les miroirs RTK ; la commande reste régie par le sandbox Codex.
 
 Les gardes d’options respectent désormais leur début d’argument. Par exemple, les quatre
 motifs `sed -i*`, `sed * -i*`, `sed --in-place*`, `sed * --in-place*` remplacent `sed *-i*`.
@@ -567,6 +596,8 @@ Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 | Formes | Limite |
 | --- | --- |
 | `git -C …`, formes exactes `uniq` | Joker interne ou fin d’arguments non exprimables : aucune règle Codex. |
+| `git branch --list` | Aucune règle Codex : `--no-list -D` annulerait la lecture et permettrait une suppression. |
+| Lectures Git avec `--ext-diff`, `--output` ; `git grep -O` / `--open-files-in-pager` | Risques d’exécution et d’écriture acceptés explicitement dans les allow Codex ; aucune exclusion d’options libres. |
 | `.env*`, options sensibles d’`awk`, `sed`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour ces trois programmes. Les filtres Codex autorisés ne filtrent pas les chemins `.env*`. |
 | `rg … --pre`, `rtk grep … --pre` | L’allow Codex explicite conserve cette capacité ; risque résiduel documenté. |
 | `sort -o`, `sort --compress-program` | Le préfixe Codex autorise aussi ces variantes, comme les arguments libres des autres filtres convenus. |
@@ -685,7 +716,10 @@ Références des arbitrages : [`git diff --output`](https://git-scm.com/docs/git
 [redirections et pipes awk](https://www.gnu.org/software/gawk/manual/html_node/I_002fO-Functions.html),
 [fichier de sortie uniq](https://www.gnu.org/s/coreutils/manual/html_node/uniq-invocation.html),
 [méta-commandes sqlite3](https://www.sqlite.org/cli.html),
-[`git merge-tree`](https://git-scm.com/docs/git-merge-tree).
+[`git merge-tree`](https://git-scm.com/docs/git-merge-tree),
+[`git grep` et son pager](https://git-scm.com/docs/git-grep),
+[négation des options Git](https://git-scm.com/docs/gitcli),
+[implémentation de `git branch`](https://github.com/git/git/blob/master/builtin/branch.c).
 
 ## Vérification du dépôt de l’outil
 
@@ -694,7 +728,7 @@ npm test
 ```
 
 Le test `test/codex-allow-retention.test.mjs` compare les allow Codex **générés**, miroirs compris,
-aux 96 allow de `main` au commit `6a7d8a089ee941cbd55eacf6b94197f71e7eef93`, conservés dans
+aux 120 allow de `main` au commit `8041307aa6d8c8376ee733decf1ec379274132eb`, conservés dans
 `test/fixtures/codex-allow-main.json`. Il ajoute les règles de `origin/main` (ou `main`) lorsque
 la référence locale existe, sans accès réseau. La copie versionnée maintient le contrôle dans
 les archives et checkouts CI superficiels. Tout retrait doit être nommé par son argv exact dans
