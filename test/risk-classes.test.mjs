@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import {
-  validatePolicy, expandEntries, decisionFor, generatePermissions,
+  validatePolicy, expandEntries, decisionFor, generatePermissions, UNIQ_FORMS,
   buildProject, checkProject, decisionForCommand, PROJECT_FILES,
 } from '../lib/generate.mjs';
 import { readCore, initProject } from '../lib/system.mjs';
@@ -27,6 +27,7 @@ function acceptsConstraint(constraint, value) {
       case 'description': return true;
       case 'const': return Object.is(value, rule);
       case 'enum': return rule.includes(value);
+      case 'pattern': return typeof value !== 'string' || new RegExp(rule, 'u').test(value);
       case 'properties': return Object.entries(rule).every(([key, child]) => !Object.hasOwn(value, key) || acceptsConstraint(child, value[key]));
       case 'allOf': return rule.every(child => acceptsConstraint(child, value));
       case 'oneOf': return rule.filter(child => acceptsConstraint(child, value)).length === 1;
@@ -34,6 +35,23 @@ function acceptsConstraint(constraint, value) {
     }
   });
 }
+
+test('schéma et validation : claudePattern allow reste exact, uniq et miroirs seulement', () => {
+  for (const prefix of ['', 'rtk ', 'rtk proxy ', 'rtk rtk proxy ']) {
+    for (const [form, expected] of [
+      ...UNIQ_FORMS.map(form => [form, true]),
+      ...['git -C * status', 'git -C * status *', 'git * log', 'uniq *', 'uniq -c input', 'uniq * -c', 'env'].map(form => [form, false]),
+    ]) {
+      const candidate = {
+        claudePattern: prefix + form, engines: ['claude'], decision: 'allow', riskClass: 'read-only',
+        justification: 'Forme exacte uniquement.', match: [prefix + 'uniq'], notMatch: [prefix + 'uniq input'],
+      };
+      assert.equal(acceptsConstraint({ allOf: schema.$defs.entry.allOf }, candidate), expected, candidate.claudePattern);
+      if (expected) assert.doesNotThrow(() => validatePolicy(policy([candidate])));
+      else assert.throws(() => validatePolicy(policy([candidate])));
+    }
+  }
+});
 
 test('décision/risque : matrice complète dans validatePolicy et la contrainte JSON Schema', () => {
   assert.ok(schema.$defs.entry.required.includes('decision'));

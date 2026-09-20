@@ -117,6 +117,9 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
    avant d’évaluer chaque segment, et ventile les commandes non analysées par cause : redirection
    vers fichier, substitution, structure shell, heredoc. Aucun retrait d’allow Codex de main,
    aucune règle Codex pour sed, awk ni uniq. (DoD 11, 12, 13)
+   **Partiellement remplacé par l’item 14 pour la part git -C** : aucun allow Claude à
+   chemin variable, aucune garde propre à cette exception. Les lectures Git sans -C restent
+   inchangées ; l’exception sed -n de l’item 13 reste applicable.
 10. **Parité Git et familles du rejeu** — autoriser `git -C <chemin> add`, `commit` et `fetch`
     côté Claude comme leurs formes sans `-C`, gardes d’options libres comprises. `git fetch`
     devient allow pour les deux moteurs ; Claude demande un accord pour `--upload-pack` et
@@ -129,6 +132,9 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
     La parité du critère 14 porte sur les trois formes confiées côté Claude ; l’accord du
     critère 15 sur `--upload-pack` concerne Claude, selon l’arbitrage explicite du user.
     Aucun retrait d’allow Codex de main. (DoD 14, 15, 16)
+    **Partiellement remplacé par l’item 14 pour la part git -C** : la parité Claude avec
+    les formes sans -C et le critère 14 ne s’appliquent plus à git -C. Les décisions Git
+    sans -C, les règles Codex et les familles du rejeu sont conservées.
 11. **Compatibilité des classes de risque avec les consommateurs** — classer `env` en
     `arbitrary-execution`, car `env <commande>` exécute un programme, sans changer sa décision.
     Refuser dans `validatePolicy` et dans le schéma toute entrée `prompt` ou `forbidden`
@@ -150,6 +156,14 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
     lisibles dans le sandbox. Adapter `validateAllow` sans changer les permissions Claude
     ni leurs gardes. Cette exception remplace l’exclusion historique de sed dans l’item 9
     uniquement pour le préfixe `sed -n`. Conserver tous les allow Codex existants. (DoD 22, 23, 24)
+14. **Retrait de l’exception git -C Claude** — supprimer les entrées `claudePattern`
+    `git -C`, leur catalogue versionné de sous-commandes, leurs gardes propres et toute
+    exception au refus d’un joker interne dans un allow. Claude Code v2.1.278 avertit sur
+    ces motifs à chemin variable ; aucun chemin littéral ne les remplace. L’absence de
+    règle suffit pour demander un accord : aucun prompt général `git -C` n’est ajouté.
+    Conserver les formes exactes uniq, toutes les gardes Git sans -C (abréviations comprises)
+    et toutes les règles Codex. Remplacer partiellement les items 9 et 10 pour git -C.
+    (DoD 25, 26, 27)
 
 ### Format de délégation visé par l'item 7
 
@@ -211,6 +225,10 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 22. « lsof -ti :3001 && sed -n '1,20p' f && cat g && ls d » est allow pour Codex, segment par segment.
 23. sed sans -n, awk, uniq, find et git branch --list restent sans règle Codex.
 24. Les décisions Claude de sed, cat et ls sont inchangées, gardes comprises.
+25. Aucune permission allow générée pour Claude ne contient un joker avant la fin du motif ; le
+    générateur le refuse sans exception.
+26. Les commandes git sans -C gardent leurs décisions actuelles, gardes d'options comprises.
+27. Les règles Codex sont inchangées.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 

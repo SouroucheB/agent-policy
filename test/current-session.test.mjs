@@ -101,14 +101,14 @@ test('git remote -v : un suffixe de mutation ne bénéficie pas de l’allow de 
   }
 });
 
-test('git -C : exception Claude gardée, aucune règle Codex', () => {
+test('git -C : aucune règle des deux moteurs, donc accord Claude par défaut', () => {
   for (const prefix of prefixes) {
     for (const command of ['git -C /x status', 'git -C ../worktree diff --stat', 'git -C /x push origin status', 'git -C /x branch -D status', 'git -C /x gh pr merge status', 'git -C /x rm status']) {
-      assert.equal(claudeDecision(prefix + command), ['git -C /x status', 'git -C ../worktree diff --stat'].includes(command) ? 'allow' : 'prompt', prefix + command);
+      assert.equal(claudeDecision(prefix + command), undefined, prefix + command);
       assert.equal(decisionFor(core, prefix + command), undefined, prefix + command);
     }
   }
-  assert.ok(permissions.allow.some(permission => permission.includes('git -C ')));
+  for (const list of Object.values(permissions)) assert.equal(list.some(permission => permission.includes('git -C ')), false);
 });
 
 test('utilitaires et écritures relatives : Claude seul, chemins exclus même sous RTK', () => {
@@ -242,10 +242,9 @@ function assertNoWildcardInjection(settings, injections = ['git push', 'gh pr me
   }
 }
 
-test('seule exception interne git -C gardée ; aucune injection de mutation autorisée', () => {
+test('aucun allow à joker interne ; les gardes restent prioritaires sur les allow', () => {
   assertNoWildcardInjection(permissions);
-  assert.ok(permissions.allow.filter(hasInternalWildcard).length > 0);
-  for (const permission of permissions.allow.filter(hasInternalWildcard)) assert.match(permission, /git -C \* /u);
+  assert.deepEqual(permissions.allow.filter(hasInternalWildcard), []);
   let exercised = 0;
   for (const rule of expandEntries(core)) {
     for (const guard of [...(rule.claudeAsk ?? []), ...(rule.claudeDeny ?? [])]) {

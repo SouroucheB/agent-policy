@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  GIT_C_COMMANDS, GIT_C_MUTATIONS, UNIQ_FORMS, gitCMutationPatterns, generatePermissions, generateCodex,
+  UNIQ_FORMS, generatePermissions, generateCodex,
   compileClaudePermission, decisionFor, validatePolicy, validateExamples,
 } from '../lib/generate.mjs';
 import { readCore } from '../lib/system.mjs';
@@ -43,53 +43,13 @@ test('gardes ambiguës : comparaison awk, préfixe --pre, noms relatifs en promp
   ]) assert.equal(verdict(prefix + command), 'prompt', prefix + command);
 });
 
-test('git -C : toutes les formes autorisées et tous les mutants à suffixe autorisé sont testés', () => {
-  for (const prefix of prefixes) for (const read of GIT_C_COMMANDS) {
-    for (const suffix of ['', ' --verbose']) assert.equal(verdict(`${prefix}git -C /worktree ${read}${suffix}`), 'allow', `${prefix}git -C /worktree ${read}${suffix}`);
-    for (const mutation of GIT_C_MUTATIONS) {
-      const command = `${prefix}git -C /x ${mutation} origin ${read}`;
-      assert.ok(['prompt', 'forbidden'].includes(verdict(command)), command);
-    }
-    for (const injection of ['git push', 'gh pr merge', 'rm']) {
-      const command = `${prefix}git -C ${injection} ${read}`;
-      assert.ok(['prompt', 'forbidden'].includes(verdict(command)), command);
-    }
-  }
-  for (const prefix of prefixes) for (const command of [
-    'git -C /x push origin status', 'git -C /x branch --list -D status',
-    'git -C /x worktree remove list', 'git -C /x remote set-url origin status',
-    'git -C /x -c name=value status', 'git -C /x diff --output=report',
-    'git -C /x grep -Oprogram needle', 'git -C /x grep needle --open-files-in-pager=program',
-  ]) assert.ok(['prompt', 'forbidden'].includes(verdict(prefix + command)), prefix + command);
-  assert.equal(verdict('git -C /x reflog'), 'prompt');
-  assert.equal(decisionFor(core, 'git -C /x status', 'codex'), undefined);
-});
-
-test('claudePattern : ciblage Claude, formes fermées et gardes Git obligatoires', () => {
-  const git = core.entries.find(e => e.claudePattern === 'git -C * status');
+test('claudePattern : ciblage Claude et formes fermées uniq uniquement en allow', () => {
   const uniq = core.entries.find(e => e.claudePattern === 'uniq');
   assert.doesNotThrow(() => validateExamples(policy([uniq])));
   for (const engines of [undefined, ['codex'], ['claude', 'codex']]) assert.throws(() => validatePolicy(policy([{ ...uniq, engines }])));
   assert.throws(() => validatePolicy(policy([{ ...uniq, pattern: ['uniq'] }])), /claudePattern/);
-  for (const claudePattern of ['git * status', 'uniq *', 'env', 'git -C * push']) {
+  for (const claudePattern of ['git * status', 'uniq *', 'env', 'git -C * push', 'git -C * status']) {
     assert.throws(() => generatePermissions(policy([{ ...uniq, claudePattern }])));
-  }
-  for (const missing of git.claudeAsk.filter(g => gitCMutationPatterns('git -C').includes(g.pattern))) {
-    assert.throws(() => generatePermissions(policy([{ ...git, claudeAsk: git.claudeAsk.filter(g => g !== missing) }])));
-  }
-});
-
-test('git -C : --exec-path et --config-env en ask, sans faux positif dans un chemin', () => {
-  for (const prefix of prefixes) for (const option of ['--exec-path', '--config-env']) {
-    assert.ok(permissions.ask.includes(`Bash(${prefix}git -C * ${option}*)`));
-    for (const argument of [option, `${option}=value`]) for (const command of [
-      `git -C /x ${argument} status`, `git -C /x log ${argument}`,
-    ]) {
-      assert.equal(verdict(prefix + command), 'prompt', prefix + command);
-      assert.equal(decisionFor(core, prefix + command, 'claude'), 'prompt');
-      assert.equal(decisionFor(core, prefix + command, 'codex'), undefined);
-    }
-    assert.equal(verdict(`${prefix}git -C /x diff -- docs/name${option}.txt`), 'allow');
   }
 });
 
