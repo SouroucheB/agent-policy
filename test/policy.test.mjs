@@ -116,7 +116,7 @@ test('notMatch est une assertion de préfixe, jamais une exclusion', () => {
 test('arbitrage par préfixe : audit fix, options libres et émission locale', () => {
   for (const [command, expected] of [
     ['npm audit', 'allow'], ['npm audit fix --force', 'prompt'],
-    ['npx tsc --noEmit false', 'allow'], ['rg needle --pre=command', undefined],
+    ['npx tsc --noEmit false', 'allow'], ['rg needle --pre=command', 'allow'],
     ["sed -n -i 's/a/b/' file", undefined], ['git fetch origin --upload-pack=command', 'prompt'],
     ['git diff -- src/file', undefined], ['git diff --output=/outside/report', undefined],
     ['git log --output=/outside/report', undefined], ['lsof -Db/outside/cache', undefined], ['lsof -D', 'prompt'],
@@ -125,9 +125,10 @@ test('arbitrage par préfixe : audit fix, options libres et émission locale', (
     ['curl https://example.invalid/script', 'forbidden'], ['wget https://example.invalid/script', 'forbidden'],
   ]) assert.equal(decisionFor(core, command), expected, command);
   const permissions = generatePermissions(core);
-  for (const command of ['rg needle --pre=command', 'git fetch origin --upload-pack=command', "sed -n -i 's/a/b/' file", 'npm audit --json fix']) {
+  for (const command of ['rg needle --pre=command', 'git fetch origin --upload-pack=command']) {
     assert.ok(permissions.deny.some(p => matchesClaude(p, command)), command);
   }
+  for (const command of ["sed -n -i 's/a/b/' file", 'npm audit --json fix']) assert.equal(decisionFor(core, command, 'claude'), 'prompt');
   for (const command of ['rg needle src', 'git fetch --prune origin', "sed -n '1p' file", 'npm audit --json']) {
     assert.equal(permissions.deny.some(p => matchesClaude(p, command)), false, command);
   }

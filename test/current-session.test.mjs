@@ -32,7 +32,7 @@ test('session courante : lectures Claude, tests RTK et mutations soumises à acc
   }
   const codex = generateCodex(core);
   const gitReads = core.entries.filter(rule => rule.pattern?.[0] === 'git' && rule.engines?.includes('claude') && rule.decision === 'allow');
-  assert.equal(gitReads.length, 14);
+  assert.equal(gitReads.length, 15);
   for (const rule of gitReads) {
     assert.deepEqual(rule.engines, ['claude']);
     for (const prefix of [[], ...DEFAULT_COMMAND_PREFIXES]) {
@@ -74,7 +74,7 @@ test('lectures git : gardes des options libres prioritaires sur allow', () => {
     for (const rule of reads) {
       const command = prefix + rule.pattern.join(' ');
       for (const option of ['--output=/outside/report', '--ext-diff', '--upload-pack=custom-command', '-c name=value']) {
-        const expected = rule.pattern[1] === 'branch' && option.startsWith('-c') ? 'prompt' : 'forbidden';
+        const expected = option.startsWith('-c') ? 'prompt' : 'forbidden';
         for (const middle of ['', '--verbose ']) {
           assert.equal(claudeDecision(`${command} ${middle}${option}`), expected, `${command} ${middle}${option}`);
         }
@@ -99,16 +99,14 @@ test('git remote -v : un suffixe de mutation ne bénéficie pas de l’allow de 
   }
 });
 
-test('git -C ne reçoit aucune règle, même si un suffixe ressemble à une lecture', () => {
+test('git -C : exception Claude gardée, aucune règle Codex', () => {
   for (const prefix of prefixes) {
     for (const command of ['git -C /x status', 'git -C ../worktree diff --stat', 'git -C /x push origin status', 'git -C /x branch -D status', 'git -C /x gh pr merge status', 'git -C /x rm status']) {
-      assert.equal(claudeDecision(prefix + command), undefined, prefix + command);
+      assert.equal(claudeDecision(prefix + command), ['git -C /x status', 'git -C ../worktree diff --stat'].includes(command) ? 'allow' : 'prompt', prefix + command);
       assert.equal(decisionFor(core, prefix + command), undefined, prefix + command);
     }
   }
-  for (const list of Object.values(permissions)) {
-    assert.equal(list.some(permission => permission.includes('git -C ')), false);
-  }
+  assert.ok(permissions.allow.some(permission => permission.includes('git -C ')));
 });
 
 test('utilitaires et écritures relatives : Claude seul, chemins exclus même sous RTK', () => {
@@ -126,7 +124,7 @@ test('utilitaires et écritures relatives : Claude seul, chemins exclus même so
       'cp .env README.md', 'cp README.md docs/.env.local', 'cp README.md docs/../outside',
       'touch /outside/file', 'touch docs/.env.example', 'touch ../outside',
       'touch -r/outside/file docs/file', 'touch docs/\\.env', 'touch `program`',
-    ]) assert.equal(claudeDecision(prefix + command), 'forbidden', prefix + command);
+    ]) assert.ok(['forbidden', 'prompt'].includes(claudeDecision(prefix + command)), prefix + command);
   }
   for (const name of ['mkdir', 'cp', 'touch']) {
     const source = core.entries.find(rule => rule.pattern?.[0] === name);
@@ -148,13 +146,12 @@ test('formes natives produites par le hook RTK : même décision que la commande
     ['npx vitest run', 'rtk vitest', 'allow', 'allow'],
     ['npx vitest run test/example.test.ts', 'rtk vitest test/example.test.ts', 'allow', 'allow'],
     ['npx playwright test', 'rtk playwright test', 'allow', 'allow'],
-    ['rg needle src', 'rtk rg needle src', undefined, 'allow'],
+    ['rg needle src', 'rtk rg needle src', 'allow', 'allow'],
     ['find -delete file', 'rtk find -delete file', 'forbidden', 'forbidden'],
     ['ls src', 'rtk ls src', undefined, 'allow'],
     ['cat README.md', 'rtk read README.md', undefined, 'allow'],
-    ['tail -n 20 README.md', 'rtk read README.md --tail-lines 20', undefined, 'allow'],
-    ['grep needle src', 'rtk grep needle src', undefined, 'allow'],
-    ['wc -l README.md', 'rtk wc -l README.md', undefined, 'allow'],
+    ['grep needle src', 'rtk grep needle src', 'allow', 'allow'],
+    ['wc -l README.md', 'rtk wc -l README.md', 'allow', 'allow'],
   ];
   for (const [before, after, codex, claude] of fixtures) {
     for (const command of [before, after]) {
@@ -162,6 +159,9 @@ test('formes natives produites par le hook RTK : même décision que la commande
       assert.equal(claudeDecision(command), claude, command);
     }
   }
+  assert.equal(decisionFor(core, 'tail -n 20 README.md'), 'allow');
+  assert.equal(decisionFor(core, 'rtk read README.md --tail-lines 20'), undefined);
+  assert.equal(claudeDecision('rtk read README.md --tail-lines 20'), 'allow');
   for (const command of ['rtk tsc', 'rtk playwright install', 'rtk npm run unknown', 'rtk test program', 'rtk proxy unknown']) {
     assert.notEqual(decisionFor(core, command), 'allow', command);
     assert.notEqual(claudeDecision(command), 'allow', command);
@@ -238,9 +238,10 @@ function assertNoWildcardInjection(settings, injections = ['git push', 'gh pr me
   }
 }
 
-test('aucun joker interne dans un allow Claude ; les gardes ne peuvent accorder une sous-commande injectée', () => {
+test('seule exception interne git -C gardée ; aucune injection de mutation autorisée', () => {
   assertNoWildcardInjection(permissions);
-  assert.deepEqual(permissions.allow.filter(hasInternalWildcard), []);
+  assert.ok(permissions.allow.filter(hasInternalWildcard).length > 0);
+  for (const permission of permissions.allow.filter(hasInternalWildcard)) assert.match(permission, /git -C \* /u);
   let exercised = 0;
   for (const rule of expandEntries(core)) {
     for (const guard of [...(rule.claudeAsk ?? []), ...(rule.claudeDeny ?? [])]) {

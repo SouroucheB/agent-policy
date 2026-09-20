@@ -187,6 +187,48 @@ une commande hors grammaire, une source invalide, un lien symbolique ou un socle
 lève une erreur ; le consommateur doit alors refuser l’exécution. L’API ne lance aucune commande,
 ne génère aucun fichier et ne remplace ni l’analyse shell de l’agent ni le sandbox du harness.
 
+## Mesurer la couverture avec replay
+
+Depuis le dépôt dont on veut prendre en compte la couche projet :
+
+```sh
+agent-policy replay /chemin/vers/historique
+```
+
+La commande parcourt récursivement les fichiers `.jsonl` et combine le socle embarqué de
+l’outil avec `agent-policy/policy.json` du répertoire courant, si présent. La sortie indique
+si cette couche est absente. Elle n’utilise pas les permissions personnelles installées.
+Les miroirs, `engines` et la priorité `forbidden > prompt > allow` sont conservés.
+
+Le rapport donne, séparément pour Claude et Codex, les totaux et pourcentages `allow`, `prompt`,
+`forbidden` et `aucune`, puis les dix familles les plus fréquentes par verdict. `aucune`
+signifie absence de règle : demande attendue côté Claude selon son mode et ses autres
+réglages, exécution encore soumise au sandbox côté Codex. Il s’agit d’une mesure statique
+de cette politique, pas d’une reconstitution des décisions réelles de l’agent.
+
+Les débuts affichés appartiennent à un vocabulaire fermé, par exemple `git diff […]` ou
+`npm run […]` : aucun argument, nom de script libre, chemin, commande intégrale ou extrait
+de JSON invalide n’est affiché, même en cas d’erreur. Les noms inconnus deviennent `autre`.
+Le lecteur ne suit aucun lien symbolique et ignore les noms `.env*`. Il n’écrit aucun fichier
+et n’exécute jamais les commandes de l’historique.
+
+Formats pris en charge et limites :
+
+- Claude : messages assistant `message.content[].type = "tool_use"`, outil `Bash`,
+  champ `input.command`. Les appels répétés avec le même identifiant sont dédupliqués.
+- Codex : lignes `response_item`, payload `function_call`, outils `exec_command`,
+  `shell_command` ou `shell` (avec ou sans espace de noms), arguments JSON `cmd` ou
+  `command`, y compris l’ancien argv `['bash', '-lc', commande]`. Les appels
+  `custom_tool_call` nommés `exec` du runtime JavaScript sont comptés séparément comme
+  **conteneurs non analysés** : leur code n’est ni évalué ni supposé représenter un Bash.
+- `&&`, `||`, `;`, sauts de ligne et pipelines simples sont décomposés en tenant compte
+  des guillemets. Le résultat le plus strict des segments gagne ; une absence de règle
+  empêche le composé d’être compté comme allow. Les substitutions, redirections et
+  structures shell complexes sont signalées comme non analysées ; elles peuvent conserver
+  un prompt/deny textuel connu, mais jamais devenir allow par simple préfixe.
+- Les lignes JSON invalides, appels invalides et doublons sont comptés sans afficher leur
+  contenu. Les sorties d’outils et le texte conversationnel ne sont pas des commandes.
+
 ## Produire un brief de délégation
 
 Depuis la racine du dépôt contenant le plan et le brief :
@@ -344,10 +386,14 @@ Codex, y compris ceux des miroirs.
 Principe du socle : **une lecture que le sandbox Codex exécute déjà ne reçoit pas de règle Codex**.
 Une règle Codex `allow` autorise la sortie du sandbox ; elle n’est pas nécessaire pour ces lectures.
 Ce principe exclut aussi les règles `prompt` et `forbidden` pour les lectures et utilitaires
-confinés au workspace. En particulier, `rg --pre` et `sed -i` restent dans le sandbox Codex.
-Les lectures Git et RTK, les utilitaires et les écritures relatives décrits ci-dessous ciblent donc
-Claude seul. `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés
-conservent leurs autorisations pour les deux moteurs.
+confinés au workspace. Une exception explicite autorise désormais les filtres `rg`, `grep`,
+`head`, `tail`, `wc`, `sort`, `cut`, `jq` côté Codex, miroirs RTK compris. Leur `residualRisk`
+documente la sortie du sandbox, notamment `rg --pre`, le miroir natif `rtk grep --pre` et les
+options libres de `sort`. `sed`, `awk` et `uniq` restent sans règle Codex : pour `uniq`, une
+règle de préfixe ne saurait garantir l’absence d’un argument désignant un fichier de sortie.
+Les lectures Git, les autres utilitaires et les écritures relatives ciblent Claude seul.
+`git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés conservent
+leurs autorisations pour les deux moteurs.
 
 `commandPrefixes` est une option à la **racine de la politique**, indépendante de `engines` :
 
@@ -384,7 +430,7 @@ Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
 | `rtk git status` | aucune règle du socle | allow |
 | `rtk git push origin main` | prompt | ask |
 | `rtk proxy rm file` | forbidden | deny |
-| `rtk rg needle src` | aucune règle du socle | allow |
+| `rtk rg needle src` | allow | allow |
 | `rtk proxy cat README.md` | aucune règle du socle | allow |
 | `rtk proxy cat .env` | aucune règle du socle | deny |
 
@@ -396,6 +442,8 @@ Les règles propres `rtk grep`, `rtk read`, `rtk ls`, `rtk diff`,
 préfixées sont également générées, sans expansion récursive. Les collisions de même motif et
 décision sont dédupliquées dans les sorties (exemples Codex réunis) ; des décisions différentes
 restent soumises à la priorité habituelle. Aucun `rtk` ou `rtk proxy` libre n’est autorisé.
+Le miroir de l’entrée `grep` Codex ajoute désormais un allow `rtk grep` séparé ; le programme
+`rtk read`, même s’il peut remplacer `tail` via le hook, reste sans règle Codex.
 
 La génération teste la politique, sans exécuter RTK ni les commandes d’exemple. Elle ne garantit
 pas qu’une version de RTK accepte toutes les formes : par exemple, `rtk proxy <commande>` sert à
@@ -426,89 +474,102 @@ dépendances et à la configuration du projet, comme leurs commandes d’origine
 
 ## Lectures Claude et gardes
 
-Règle de génération : **pas de joker interne dans un allow Claude**. Les allow sont des préfixes
-argv littéraux rendus en `Bash(commande:*)`. Les jokers internes sont réservés aux gardes
-restrictives `claudeDeny` et `claudeAsk` ; leur correspondance ne peut jamais accorder un allow.
-Le générateur contrôle cette post-condition. Les tests injectent `git push`, `gh pr merge` et
-`rm` dans ces motifs et vérifient aussi qu’un allow à joker interne serait rejeté.
+Règle générale : **pas de joker interne dans un allow Claude**. Les préfixes argv littéraux
+produisent `Bash(commande:*)`. Le champ optionnel `claudePattern`, exclusif de `pattern` et
+réservé à `engines: ["claude"]`, permet les formes exactes de `uniq` et l’exception ci-dessous.
+Il conserve les assertions `match` / `notMatch` et suit les miroirs ; aucune règle Codex n’est
+inventée pour représenter un motif Claude.
 
-**Aucune règle pour `git -C`**, ni à joker ni avec une liste de chemins de worktrees. Cette forme
-reste soumise à accord côté Claude ; l’agent travaille normalement depuis son worktree.
-Un motif tel que `git -C * status` engloberait aussi `git -C /x push origin status` : il est interdit.
+**Exception assumée : `git -C *` suivi d’une lecture fermée** : `status`, `diff`, `log`, `show`,
+`rev-parse`, `branch --list`, `ls-files`, `grep`, `merge-tree`, `worktree list`. Chaque lecture
+possède un motif sans suffixe et un motif acceptant des arguments. Les chemins des worktrees
+ne sont pas énumérés. Aucun allow générique `git -C *` n’est produit.
 
-Les lectures Git autorisées pour Claude sont `git status`, `git diff`, `git log`, `git show`,
-`git rev-parse`, `git grep`, `git ls-files`, `git ls-tree`, `git blame`, `git remote -v`,
-`git stash list`, `git tag --list` et `git worktree list`. Elles ont des gardes `deny` sur
-`--output`, `--ext-diff`, `--upload-pack` et `-c`, à toute position parmi les arguments suffixes.
-`git grep` refuse aussi le lancement d’un pager par `-O` / `--open-files-in-pager`.
-`git remote -v` conserve l’allow de lecture, mais ses sous-commandes de mutation (`add`, `rename`,
-`remove`, `rm`, `set-head`, `set-branches`, `set-url`, `prune`, `update`) ont des gardes `ask`.
-Les formes fermées `git diff --`, `git diff --cached --` et `git log --` sont remplacées par ces
-préfixes de lecture. Aucune de ces lectures ne génère de règle Codex, miroirs compris.
+Un joker peut englober une sous-commande : les gardes `ask` couvrent donc `push`, `pull`,
+`fetch`, `merge`, `rebase`, `reset`, `restore`, `checkout`, `switch`, `commit`, `add`, `stash`,
+`clean`, `rm`, `tag`, les mutations de `branch`, `worktree` et `remote`, `config` et `gc`.
+Les écritures apparentées (`init`, `mv`, `apply`, `cherry-pick`, `revert`, mutations d’objets
+et maintenance) sont également gardées, ainsi que le lancement du pager de `git grep`.
+Le générateur refuse cette exception si une garde obligatoire manque. Les tests injectent
+`git push`, `gh pr merge`, `rm` et chaque mutation devant chaque suffixe de lecture, y compris
+`git -C /x push origin status`, sous RTK aussi : le résultat doit être `prompt` ou `forbidden`.
+Les autres motifs allow avec joker interne restent interdits. La garde `merge` respecte la
+frontière du mot pour ne pas bloquer la lecture `merge-tree`.
 
-`git branch` autorise la lecture et la création locale réversible. Les options `-d`, `-D`, `-m`,
-`-M`, `-c`, `-C`, `--set-upstream-to`, `--unset-upstream`, `-u`, `-f` et leurs alias longs ont des
-gardes `ask`, même après d’autres arguments. Ici `-c` désigne la copie de branche : il demande
-un accord, contrairement à la garde `deny` des autres lectures. La configuration, les hooks,
-filtres et pagers Git existants restent supposés de confiance, comme le précise `residualRisk`.
+Les lectures Git directes restent autorisées uniquement pour Claude : `status`, `diff`, `log`,
+`show`, `rev-parse`, `grep`, `ls-files`, `ls-tree`, `blame`, `remote -v`, `stash list`,
+`tag --list`, `worktree list`. `merge-tree` est classé `local-reversible` : son mode moderne
+crée des objets Git sans modifier les branches, l’index ou le worktree.
+`git branch` permet aussi la création locale ; `-d`, `-D`, `-m`, `-M`, `-c`, `-C`, `-u`, `-f`,
+`--set-upstream-to`, `--unset-upstream` et leurs alias de mutation demandent un accord.
+`git remote -v` garde ses protections contre les sous-commandes de mutation.
 
-Le socle autorise pour **Claude uniquement** : `ls`, `cat`, `head`, `tail`, `grep`, `wc`, `sort`,
-`rg`, `sed -n`, `echo`, `printf`, `pgrep`, `xxd`, `dig`, `pbpaste` et `which`. Ces règles évitent une
-demande Bash à chaque lecture. Elles ne modifient pas les permissions de lecture dans le sandbox
-Codex ; `rg` et `sed` n’ont aucune règle Codex, ainsi que leurs miroirs.
+Les gardes d’options respectent désormais leur début d’argument. Par exemple, les quatre
+motifs `sed -i*`, `sed * -i*`, `sed --in-place*`, `sed * --in-place*` remplacent `sed *-i*`.
+Un chemin contenant `-integration`, `-immutability`, `--pre`, `--output`, `--ext-diff`,
+`--upload-pack` ou `-c` ne suffit plus à déclencher ces gardes. Les miroirs sont dérivés de
+la même source. Les vrais `--pre` et `--output` (argument séparé ou `=valeur`) sont refusés ;
+les motifs plus larges pouvant attraper `--pre-glob` ou `--output-indicator-new` demandent
+un accord. Les gardes `--ext-diff`, `--upload-pack` et du pager `git grep` restent en deny.
+Les motifs `-c*` Git, parfois des options de lecture légitimes, sont en ask.
 
-L’audit des prompts du socle a retiré les anciens prompts Codex `rg` et `sed`, en conservant
-leurs lectures et gardes Claude existantes. L’entrée `forbidden` `rtk grep --pre` cible désormais
-Claude seul. Liste complète des formes retirées de la sortie Codex : `rg`, `rtk rg`,
-`rtk proxy rg`, `sed`, `rtk sed`, `rtk proxy sed`, `rtk grep --pre`, `rtk rtk grep --pre`,
-`rtk proxy rtk grep --pre`. Les autres prompts concernent les effets distants, l’état partagé
-ou les arbitrages explicites ci-dessous ; aucune autre lecture confinée n’a été identifiée.
+**Une garde susceptible d’attraper un usage légitime est en `prompt` (`claudeAsk`), jamais en
+refus.** Cela vaut notamment pour l’écriture en place de sed, les gardes larges de chemins
+(`..`, expansions), `lsof -D` et `npm audit … fix`. Une règle plus précise réellement interdite
+reste prioritaire. Une garde protège un texte ; elle n’est pas un analyseur des arguments.
 
-Les entrées allow de `cat`, `head`, `tail`, `grep`, `rg` et `sed` ciblant Claude exigent la garde
-canonique `<commande> *.env*`. `rg` exige aussi `rg *--pre*`. L’exception à l’interdiction de
-`rg`/`sed` en allow exige exactement `engines: ["claude"]`, `riskClass: "read-only"` et ces gardes.
-Pour `sed`, seul le préfixe `sed -n` est accepté ; les gardes `sed *-i*` et `sed *--in-place*`
-conservent les refus d’écriture en place. `grep` porte aussi une garde `--pre`, utile à son miroir
-`rtk grep`, qui transmet les options à ripgrep.
+Outre les lectures existantes (`ls`, `cat`, `head`, `tail`, `grep`, `wc`, `sort`, `rg`, `sed -n`,
+`echo`, `printf`, `pgrep`, `xxd`, `dig`, `pbpaste`, `which`), Claude reçoit `jq`, `awk`, `cut`,
+`tr`, `column`, `diff`, `comm`, `basename`, `dirname`, `realpath`, `stat`, `file`, `du`, `df`,
+`gh run watch`, `gh run view` et `gh pr checks`. `file -C` / `--compile` est refusé.
 
-Le miroir reproduit automatiquement ces gardes sous `rtk` et `rtk proxy`. Les commandes propres
-`rtk read`, `rtk grep` et `rtk diff` portent elles aussi les gardes `.env*`, et `rtk grep` la garde
-`--pre`. La forme `rtk grep --pre <programme>` a aussi un préfixe interdit pour Claude seul.
-Un refus Claude est prioritaire sur une permission allow, y compris dans un autre motif.
+Arbitrages des filtres :
 
-`pwd`, `date`, `which`, `node --version`, `npm --version`, `codex --version` et `rtk --version`
-sont autorisés pour Claude seul. Il en va de même pour `mkdir -p`, `cp` et `touch`, limités aux
-chemins relatifs : gardes `deny` sur les chemins absolus, `..`, `.env*`, les chemins cités absolus
-et les formes d’expansion ou d’échappement (`~`, `$`, accent grave, antislash). Les destinations
-absolues passées par option sont également refusées. Ces gardes et décisions suivent les miroirs
-RTK. Elles vérifient le texte, sans résoudre les liens symboliques ou les montages ; la frontière
-d’écriture du dépôt reste applicable.
+- `awk` est Claude seul. Redirections, pipes, `system()`, `getline`, `-f`, `-i`, `@include`,
+  `@load` et les options de chargement apparentées demandent un accord. La comparaison
+  `$3 > 5` peut correspondre à la garde : elle n’est jamais refusée. Aucun allow Codex.
+- `uniq` utilise des permissions **exactes**, sans `:*` : `uniq`, `uniq -c`, `uniq -d`,
+  `uniq -u`, `uniq -i`, `uniq -c -i`, `uniq -i -c`, `uniq -d -i`, `uniq -i -d`,
+  `uniq -u -i`, `uniq -i -u`, `uniq -cd`, `uniq -ci`, `uniq -di`, `uniq -ui`.
+  Tout ajout d’argument sort de cette liste et reste soumis à accord faute de règle Claude.
+  Un prompt général masquerait même ces formes exactes ; il n’est donc pas généré.
+  Aucun préfixe Codex pour `uniq`, même sous RTK : il élargirait ces formes à une écriture.
+- `env` reste en prompt, même sans argument, car il peut révéler des jetons.
+- `sqlite3` reste en prompt : limiter la base à `.agent-tmp` ne confine ni SQL ni les
+  méta-commandes comme `.shell` ou `.output`.
+- `cd` est Claude seul, `local-reversible`. Dans `cd chemin && commande`, chaque segment
+  conserve sa propre décision ; `cd` n’autorise jamais une commande suivante inconnue.
 
-Ces gardes portent sur le **texte de commande** : `.env*` vise les chemins explicites, y compris
-relatifs, absolus et cités, mais peut aussi refuser une recherche où `.env` est le motif. Elles
-ne résolvent pas les liens symboliques, chemins échappés, expansions shell, listes de fichiers
-indirectes ou parcours récursifs implicites. Elles ne constituent pas un contrôle des fichiers
-effectivement ouverts. La frontière d’écriture et les protections de l’agent restent nécessaires.
-`read-only` décrit l’usage demandé : les arguments libres de `sort` (`-o`, `--compress-program`),
-`xxd` (sortie, `-r`) ou le programme de `sed -n` (instructions `e`/`w`) peuvent changer ses effets.
-Ces limites sont explicitées dans `residualRisk` et ne sont pas masquées par le générateur.
+Les gardes `.env*` ciblent le début du basename : `.env`, `config/.env.local` et les formes
+citées sont protégés ; `report.env.integration.md` ne déclenche pas la garde. `cat`, `head`,
+`tail`, `rtk read` et `rtk diff` conservent leurs deny. Pour `grep`, `rg`, `sed` et `rtk grep`,
+le texte peut être un motif de recherche légitime : les gardes `.env*` sont en ask.
+Les allow concernés exigent ces gardes à la validation, avec celles des options sensibles.
 
-`lsof -i`, `lsof -ti` et `lsof -nP` sont autorisés pour les deux moteurs et leurs miroirs. La
-règle générale `lsof` en prompt est retirée, car elle masquerait ces allow. Le préfixe `lsof -D`
-reste en prompt et une garde Claude refuse `-D` à toute position. Les valeurs collées comme
-`lsof -i:3000` / `-ti:3000` ne correspondent pas aux tokens `-i` / `-ti` : elles ne sont pas
-autorisées par le préfixe Codex. Utiliser les formes à tokens séparés, ou `lsof -nP -iTCP:3000`.
+`pwd`, `date`, les lectures `--version`, `mkdir -p`, `cp` et `touch` restent Claude seuls.
+Les écritures relatives gardent leurs refus des chemins absolus et `.env*` ; les motifs
+ambigus de traversal et d’expansion demandent un accord. Ces gardes ne résolvent ni liens
+symboliques, montages, chemins échappés, fichiers indirects ni parcours récursifs implicites.
+Elles ne constituent pas un contrôle des fichiers réellement ouverts. `read-only` décrit
+l’usage demandé : les programmes sed et les options libres de certains filtres restent
+des limites documentées dans `residualRisk`.
+
+`lsof -i`, `lsof -ti` et `lsof -nP` restent autorisés pour les deux moteurs. `lsof -D` est en
+prompt Codex ; sa garde textuelle Claude est désormais en ask. Les formes collées comme
+`lsof -i:3000` ne correspondent pas aux tokens Codex séparés.
 
 Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 
 | Formes | Limite |
 | --- | --- |
-| Lectures `.env*`, dont `rtk read` / `rtk grep` / `rtk diff` | Aucun filtrage des noms de fichiers par un préfixe argv. Les gardes de chemins sont propres à Claude ; les entrées Claude seules restent absentes de Codex. |
-| `npm audit … fix`, `git fetch … --upload-pack` | Impossible de filtrer une option en position libre ; `fetch` reste en prompt Codex, comme le sous-préfixe exact `npm audit fix`. |
-| `rg … --pre`, `sed … -i/--in-place`, `rtk grep … --pre` ou `--pre=commande` | Aucune règle Codex pour ces utilitaires confinés au sandbox ; gardes Claude seules. |
-| `lsof … -D…`, `lsof -i:…`, `lsof -ti:…` | Options en position libre ou valeurs collées ; les formes `-i` / `-ti` / `-nP` autorisent encore des arguments suivants, même `-D`, côté Codex. |
-| `find … -delete/-exec`, `perl -pi*` / `-i*` | Position libre ou suffixe dans un token, comme pour les formes directes. |
-| Heredocs, `/bin/*`, `/usr/bin/*`, `/usr/local/bin/*`, `/opt/homebrew/bin/*`, `head-*`, `tail-*` | Syntaxe shell ou joker à l’intérieur du token exécutable ; gardes Claude seules. |
+| `git -C …`, formes exactes `uniq` | Joker interne ou fin d’arguments non exprimables : aucune règle Codex. |
+| `.env*`, options sensibles d’`awk`, `sed`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour ces trois programmes. Les filtres Codex autorisés ne filtrent pas les chemins `.env*`. |
+| `rg … --pre`, `rtk grep … --pre` | L’allow Codex explicite conserve cette capacité ; risque résiduel documenté. |
+| `sort -o`, `sort --compress-program` | Le préfixe Codex autorise aussi ces variantes, comme les arguments libres des autres filtres convenus. |
+| `npm audit … fix`, `git fetch … --upload-pack` | Position libre non filtrable ; sous-préfixe `npm audit fix` et `git fetch` restent en prompt. |
+| `lsof … -D…` | Le préfixe de lecture Codex ne sait pas exclure une option suffixe. |
+| `find … -delete/-exec`, `perl -pi*` / `-i*` | Position libre ou suffixe dans un token. |
+| Heredocs, exécutables absolus, `head-*`, `tail-*` | Syntaxe shell ou joker dans le nom exécutable ; gardes Claude seules. |
 
 La priorité est `forbidden > prompt > allow`. Une permission Claude canonique est
 `Bash(gh pr merge:*)`. Un `prompt` général ne permet donc aucune exception `allow` plus précise :
@@ -528,15 +589,15 @@ Question par préfixe : **la variante peut-elle nuire seule, sans étape préala
 - Configuration préalable nécessaire, ou effet local réversible accepté : expliquer la limite
   dans le champ optionnel `residualRisk`. `npx tsc --noEmit false` reste ainsi autorisé.
 - Option libre suffisante pour exécuter une commande ou écrire hors dépôt : aucun `allow`
-  générique Codex pour `rg`, `sed` et `git fetch`. L’exception Claude demandée pour `rg` et
-  `sed -n` est bornée aux moteurs et gardes décrits ci-dessus.
+  générique Codex par défaut. Les filtres explicitement convenus ci-dessus constituent une
+  exception documentée ; `sed` et `awk` restent confinés, `git fetch` reste en prompt.
 
 Les gardes supplémentaires Claude se déclarent dans la **même source**, avec leurs propres tests :
 
 ```json
 "claudeDeny": [
   {
-    "pattern": "git fetch *--upload-pack*",
+    "pattern": "git fetch * --upload-pack*",
     "match": ["git fetch origin --upload-pack=custom-command"],
     "notMatch": ["git fetch --prune origin"]
   }
@@ -556,9 +617,9 @@ Choix explicites du socle après application de ce critère :
 
 | Famille | Choix et limite |
 | --- | --- |
-| Lectures Git | Préfixes simples Claude seuls, avec gardes sur les options libres. Codex les exécute dans son sandbox, sans règle allow qui l’en ferait sortir. Aucun `git -C` autorisé. |
+| Lectures Git | Préfixes simples Claude seuls, avec gardes sur les options libres. Codex les exécute dans son sandbox, sans règle allow qui l’en ferait sortir. Exception `git -C` Claude gardée, décrite ci-dessus. |
 | Git local | Hooks, filtres et pager existants supposés de confiance ; aucun `git -c …` n’est autorisé globalement. La création de worktree est l’opération locale réversible expressément prévue. |
-| `lsof` | Lectures `-i`, `-ti`, `-nP` autorisées explicitement. `-D` reste soumis à accord en préfixe Codex et refusé par garde Claude ; les options suffixes et valeurs collées restent une limite Codex. |
+| `lsof` | Lectures `-i`, `-ti`, `-nP` autorisées explicitement. `-D` reste soumis à accord en préfixe Codex et soumis à accord par garde Claude ; les options suffixes et valeurs collées restent une limite Codex. |
 | `npm audit` | `fix` canonique en `prompt`. Codex ne couvre pas `npm audit --json fix` avec ce sous-préfixe ; la limite est dans `residualRisk` et Claude dispose d’un refus supplémentaire. |
 | `npm ci` | `allow` sur les deux moteurs, risque `local-reversible` : installation exacte du lockfile, déjà confiée aux wrappers de projet. Dépendances et scripts d’installation supposés de confiance ; accès réseau/cache possibles. |
 | `npm audit fix`, `git restore`, `git worktree remove` | `prompt` conservé sur les deux moteurs, par arbitrage explicite : dépendances modifiées, travail non commité perdu ou worktree d’un autre chantier supprimé. |
@@ -616,7 +677,11 @@ par préfixe ne sont pas une frontière de sécurité pour toutes les invocation
 Références des arbitrages : [`git diff --output`](https://git-scm.com/docs/git-diff),
 [cache `lsof -D`](https://github.com/lsof-org/lsof/blob/master/Lsof.8),
 [`npm audit fix`](https://docs.npmjs.com/cli/v11/commands/npm-audit/),
-[`supabase status`](https://supabase.com/docs/reference/cli/supabase-status).
+[`supabase status`](https://supabase.com/docs/reference/cli/supabase-status),
+[redirections et pipes awk](https://www.gnu.org/software/gawk/manual/html_node/I_002fO-Functions.html),
+[fichier de sortie uniq](https://www.gnu.org/s/coreutils/manual/html_node/uniq-invocation.html),
+[méta-commandes sqlite3](https://www.sqlite.org/cli.html),
+[`git merge-tree`](https://git-scm.com/docs/git-merge-tree).
 
 ## Vérification du dépôt de l’outil
 
@@ -632,5 +697,6 @@ les sauvegardes, le retour arrière, les échecs d’écriture, les 31 refus glo
 simulés (formes directes et RTK), la post-condition Claude, le contrat/rendu exact des briefs,
 le ciblage `engines`, les miroirs hérités par les dépôts, les formes natives RTK, les sessions courantes,
 la copie versionnée du socle, ses dérives et l’API autonome de décision combinée,
-les gardes de lecture/écriture et les injections dans les jokers. Aucun appel fournisseur, aucun
+les gardes de lecture/écriture, les injections dans les jokers et le rejeu JSONL sans écriture,
+exécution ni affichage d’arguments. Aucun appel fournisseur, aucun
 paquet téléchargé et aucune installation globale ne sont nécessaires.
