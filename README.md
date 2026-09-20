@@ -107,12 +107,13 @@ agent-policy/core-policy.json         # copie exacte du socle de l'outil
 agent-policy/core-policy.version.json # version de l'outil et SHA-256 de cette copie
 scripts/agent-policy/generate.mjs     # copie autonome avec version et socle embarqué
 scripts/agent-policy/brief.mjs        # commande de brief autonome avec en-tête de version
+scripts/claude-worktree-write-guard.cjs # garde Claude autonome avec en-tête de version
 .codex/rules/project.rules           # sortie générée
-.claude/settings.json                # entrées Bash générées ; autres permissions et clés conservées
+.claude/settings.json                # hook du garde dès init ; entrées Bash produites par build
 ```
 
 `init` conserve les fichiers existants et ajoute les copies absentes. `agent-policy init --upgrade`
-rafraîchit le socle, sa version, le générateur et la commande `brief` depuis l’outil installé,
+rafraîchit le socle, sa version, le générateur, la commande `brief` et le garde depuis l’outil installé,
 sans modifier un octet de `policy.json`.
 Ces deux commandes sont idempotentes. Une source existante invalide fait échouer l’opération.
 Le champ `version: 1` des politiques reste la version de leur **format**. Le fichier
@@ -145,6 +146,69 @@ document. Ajouter une permission non-Bash à la main, modifier un réglage non p
 Une post-condition compare les permissions non-Bash, les autres valeurs et leur ordre avec
 l’entrée, puis les listes Bash avec la politique. Tout écart fait échouer la commande avant
 l’écriture des fichiers, y compris pendant une installation.
+
+### Frontière d’écriture Claude (item 8)
+
+`init` dépose `scripts/claude-worktree-write-guard.cjs`, fichier CommonJS autonome sans
+dépendance, repris du garde CoproOS. Il déclare dans `.claude/settings.json` ce hook :
+
+```json
+{
+  "matcher": "Bash|Write|Edit|MultiEdit",
+  "hooks": [{
+    "type": "command",
+    "command": "node \"$CLAUDE_PROJECT_DIR/scripts/claude-worktree-write-guard.cjs\"",
+    "timeout": 5
+  }]
+}
+```
+
+Cette déclaration appartient à `hooks.PreToolUse`. Le garde renvoie le code 2 pour bloquer
+l’appel, sans jamais exécuter le texte Bash reçu ([contrat des hooks Claude](https://code.claude.com/docs/en/hooks#exit-code-2)).
+Node doit être disponible dans le PATH de Claude. Versionner le garde et les réglages avec
+les autres fichiers déposés, puis recharger les réglages de Claude avant de travailler.
+
+`init` ne possède que cette déclaration : les autres hooks, leurs options, les permissions,
+les autres clés et leur ordre sont conservés, sans reformater leurs valeurs. Une post-condition
+vérifie cette conservation et la présence d’un seul garde synchrone sur les quatre outils,
+avant toute écriture. Les réglages invalides ou `disableAllHooks: true` font échouer `init`.
+`build` conserve ensuite tous les hooks ; il continue de ne posséder que les permissions Bash.
+
+Un dépôt comme CoproOS qui déclare déjà exactement ce garde ne reçoit aucune seconde
+déclaration et son `settings.json` reste identique octet pour octet. Les anciennes invocations
+relatives `node scripts/claude-worktree-write-guard.cjs` (avec ou sans `./`) et la forme
+`${CLAUDE_PROJECT_DIR}` citée sont reconnues et normalisées. Les autres commandes ne sont
+jamais identifiées par une simple sous-chaîne. Un fichier existant est conservé par `init` ;
+`init --upgrade` actualise sa copie. Répéter ces commandes ne réécrit pas les fichiers conformes.
+
+Le worktree est `CLAUDE_PROJECT_DIR`, ou le parent du dossier `scripts/` du garde déposé si
+cette variable manque ; le `cwd` transmis par l’outil sert uniquement à résoudre les chemins
+relatifs. `Write`, `Edit` et `MultiEdit` refusent toute cible extérieure, y compris un fichier
+absent sous un lien symbolique, un lien pendant ou une traversée `..`. Bash contrôle les
+mutations et exécutions reconnues : rm, mv, cp, mkdir, touch, tee, interpréteurs, npm, Git,
+redirections, etc., avec les formes RTK et les changements de répertoire simples. Les lectures
+externes restent possibles ; `/dev/null` et les duplications de descripteurs sont admis.
+Comme dans CoproOS, le code inline et les mutations globales Git/npm sont refusés.
+
+**Limites : ce hook est un contrôle préalable, pas un sandbox système.** Son analyse shell
+est conservatrice : substitutions, heredocs, structures complexes, chemins dynamiques et
+wrappers opaques peuvent être refusés. Elle ne prouve pas les effets de tous les programmes
+ou de leurs options : scripts du dépôt, programmes sed/awk, hooks Git, outils configurés,
+écritures indirectes et état géré par les services restent de confiance et doivent être revus.
+Les sources et destinations d’une commande mutante sont contrôlées ensemble : copier une
+source extérieure peut donc être refusé. Le contrôle des liens précède l’exécution et ne
+supprime pas les courses sur le système de fichiers ni les alias par liens physiques.
+Il ne couvre pas les outils autres que Bash/Write/Edit/MultiEdit, un hook désactivé, ni un
+garde modifié après `init` ; `check` contrôle les règles, pas l’intégrité de ce garde.
+Un échec de démarrage (Node ou fichier absent) ou un dépassement du délai de cinq secondes
+ne bloque pas l’outil côté Claude : surveiller les erreurs de hook au démarrage
+([erreurs et délais des hooks](https://code.claude.com/docs/en/hooks#timeouts)).
+Conserver le sandbox de l’agent et utiliser des wrappers de projet revus pour les services.
+
+Codex ne reçoit aucun hook : `workspace-write` pose déjà sa frontière. **Une commande
+autorisée côté Codex s’exécute hors sandbox** ; une règle allow ne garantit donc pas son
+confinement au worktree. Cette livraison ne change ni le socle ni les règles générées des
+deux moteurs et n’exécute aucune installation globale.
 
 `check --codex` ajoute, si `codex` est installé, un contrôle natif de chaque commande d’exemple
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
@@ -308,7 +372,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "733f73abd13e7600ca70cb64213e0fb7fabda0d8915005a0c4d7212f684fa235",
+    "sha256": "cbc8f39bf27f6371920f4e8cd912c3411b31756f507a4bd18f1cec897a784d44",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },
