@@ -226,9 +226,37 @@ Formats pris en charge et limites :
   champ `input.command`. Les appels répétés avec le même identifiant sont dédupliqués.
 - Codex : lignes `response_item`, payload `function_call`, outils `exec_command`,
   `shell_command` ou `shell` (avec ou sans espace de noms), arguments JSON `cmd` ou
-  `command`, y compris l’ancien argv `['bash', '-lc', commande]`. Les appels
-  `custom_tool_call` nommés `exec` du runtime JavaScript sont comptés séparément comme
-  **conteneurs non analysés** : leur code n’est ni évalué ni supposé représenter un Bash.
+  `command`, y compris l’ancien argv `['bash', '-lc', commande]`.
+- Codex JavaScript : payload `custom_tool_call` nommé `exec` ou `functions.exec`, avec
+  le code dans `input`. Une analyse lexicale sans dépendance relève les appels directs
+  `tools.exec_command(...)`, `tools.shell(...)` et `tools.shell_command(...)`. Leur unique
+  argument doit être un objet contenant `cmd` ou `command` comme propriété explicite,
+  citée ou non, dont la valeur complète est une chaîne simple, double ou un gabarit sans
+  interpolation. Les échappements JavaScript et continuations de ligne sont décodés ;
+  commentaires, espaces, sauts de ligne et virgules finales sont admis. Les appels sous
+  `await`, `Promise.all` ou `Promise.allSettled` sont reconnus. Chaque littéral est rejoué
+  comme un appel Codex ordinaire ; un conteneur peut donc ajouter plusieurs commandes.
+  Son identifiant déduplique le groupe entier, sans supprimer deux commandes identiques
+  présentes dans ce même groupe.
+- Les **fragments JavaScript non analysés** ont huit causes fixes : variable, concaténation,
+  gabarit avec interpolation, appel calculant la valeur, autre expression non littérale,
+  objet ou arguments non pris en charge, syntaxe lexicale non prise en charge ou incomplète,
+  aucun appel shell direct reconnu. Une cause est comptée par appel non extrait ; les deux
+  dernières peuvent concerner le conteneur entier. Un conteneur mixte contribue à la fois
+  aux commandes rejouées et à ces causes. Les conteneurs **sans commande littérale** sont
+  aussi ventilés séparément, une fois chacun selon leur première cause. Une chaîne vide
+  est un littéral extrait, puis compté comme appel invalide, comme hors conteneur.
+- L’analyse JavaScript ne résout ni variables, alias, clés calculées, spreads, accesseurs,
+  propriétés abrégées, clés dupliquées, tableaux argv ni gabarits étiquetés. Une valeur
+  entre parenthèses reste une expression non littérale. Les commentaires et textes des
+  chaînes/gabarits ne créent aucun appel ; les appels directs dans les expressions d’une
+  interpolation sont relevés sans calculer cette interpolation. Un slash hors chaîne ou
+  commentaire (division ou expression régulière), une erreur lexicale, un groupe inachevé
+  ou une imbrication supérieure à 128 invalide l’extraction du conteneur entier : aucune
+  extraction partielle n’est utilisée. Ce sous-ensemble évite de nécessiter un parseur
+  JavaScript complet. Aucun contenu n’est évalué, importé ou lancé dans un sous-processus.
+  Il s’agit d’un relevé de sites d’appel : boucles, branches, mutations et fréquence réelle
+  d’exécution ne sont pas interprétées. Les tests ne lisent que des historiques synthétiques.
 - `&&`, `||`, `;`, sauts de ligne et pipelines simples sont décomposés en tenant compte
   des guillemets. Le résultat le plus strict des segments gagne ; une absence de règle
   empêche le composé d’être compté comme allow. Les redirections bénignes `2>&1`,
@@ -243,7 +271,7 @@ Formats pris en charge et limites :
   non analysées ; `<<-` et les here-strings `<<<` rejoignent la catégorie heredoc. Un
   prompt/deny textuel connu peut être conservé, jamais un allow par simple préfixe.
   Ces totaux incluent donc aussi des commandes prompt/forbidden ; ils ne sont pas synonymes
-  du verdict `aucune`. Les conteneurs JavaScript Codex gardent leur compteur séparé.
+  du verdict `aucune`. Les limites JavaScript gardent leurs compteurs séparés.
 - Les lignes JSON invalides, appels invalides et doublons sont comptés sans afficher leur
   contenu. Les sorties d’outils et le texte conversationnel ne sont pas des commandes.
 
@@ -280,7 +308,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "fce00a2ce88ffe31627613cf4e682e1bced5ebaf3e97700a417d3e0386f70c10",
+    "sha256": "f267d5c5db3a2ec4ff26bbbc8fb52fb989dcb44ca9e2818b605a7cc6ce1c896d",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },

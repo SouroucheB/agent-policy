@@ -119,7 +119,7 @@ test('formats Claude et Codex : uniquement les appels outils, aucun texte ou ré
   }
   assert.equal(historyCalls(codex('one', 'shell', { command: ['bash', '-lc', 'git status'] }))[0].command, 'git status');
   assert.equal(historyCalls(codex('one', 'shell', { command: ['git', 'status'] }))[0].command, "'git' 'status'");
-  assert.deepEqual(historyCalls({ type: 'response_item', payload: { type: 'custom_tool_call', name: 'exec', call_id: 'container', input: 'arbitraryJavaScript()' } }), [{ engine: 'codex', id: 'container', container: true }]);
+  assert.deepEqual(historyCalls({ type: 'response_item', payload: { type: 'custom_tool_call', name: 'exec', call_id: 'container', input: 'arbitraryJavaScript()' } }), [{ engine: 'codex', id: 'container', container: true, commands: [], causes: ['no-shell-call'] }]);
   for (const record of [
     { type: 'user', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: 'rm x' } }] } },
     { type: 'response_item', payload: { type: 'function_call_output', output: 'git push' } },
