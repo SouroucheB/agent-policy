@@ -52,6 +52,55 @@ test('install --target-root : diff, confirmation exacte, sauvegardes et migratio
   assert.equal(fs.readdirSync(path.join(root, '.agent-policy/backups')).length, 1);
 });
 
+test('mise à jour d’un socle de taille réelle : seules les lignes modifiées sont affichées et sauvegarde complète', t => {
+  const root = temporary(t);
+  const plan = prepareInstall(root);
+  for (const file of plan) if (file.after !== null) put(root, file.relative, file.after);
+  const target = '.codex/rules/00-core.rules';
+  const expected = plan.find(file => file.relative === target).after;
+  const lineCount = expected.split('\n').length;
+  assert.ok(lineCount * lineCount > 4_000_000, 'le socle réel doit dépasser l’ancienne borne');
+  let changed = 0;
+  const previous = expected.replaceAll('    decision="allow",', line => {
+    if (changed === 3) return line;
+    changed += 1;
+    return '    decision="prompt",';
+  });
+  assert.equal(changed, 3);
+  put(root, target, previous);
+  const result = cli(root, ['install', '--target-root', root], { input: `INSTALLER ${root}\n` });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.readFileSync(path.join(root, target), 'utf8'), expected);
+  const displayed = result.stdout.split(`--- ${target}\n`)[1].split('Confirmer exactement')[0];
+  const changes = displayed.split('\n').filter(line => /^[+-]/u.test(line) && line.startsWith('+++') === false);
+  assert.deepEqual(changes.toSorted(), [
+    ...Array(3).fill('+    decision="allow",'), ...Array(3).fill('-    decision="prompt",'),
+  ].toSorted());
+  assert.equal(displayed.includes('pattern='), false);
+  assert.equal(displayed.includes('Diff simplifié'), false);
+  const backups = fs.readdirSync(path.join(root, '.agent-policy/backups'));
+  assert.equal(backups.length, 1);
+  const backup = path.join(root, '.agent-policy/backups', backups[0]);
+  assert.equal(fs.readFileSync(path.join(backup, target), 'utf8'), previous);
+  const manifest = JSON.parse(fs.readFileSync(path.join(backup, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.files.find(file => file.path === target).existed, true);
+});
+
+test('deux install successifs du même socle réel : déjà synchronisé, sans nouvelle sauvegarde', t => {
+  const root = temporary(t);
+  const first = cli(root, ['install', '--target-root', root], { input: `INSTALLER ${root}\n` });
+  assert.equal(first.status, 0, first.stderr);
+  const target = path.join(root, '.codex/rules/00-core.rules');
+  const before = { text: fs.readFileSync(target, 'utf8'), mtime: fs.statSync(target).mtimeMs };
+  const backups = fs.readdirSync(path.join(root, '.agent-policy/backups'));
+  const second = cli(root, ['install', '--target-root', root]);
+  assert.equal(second.status, 0, second.stderr);
+  assert.equal(second.stdout, 'Socle déjà synchronisé ; aucune écriture.\n');
+  assert.equal(fs.readFileSync(target, 'utf8'), before.text);
+  assert.equal(fs.statSync(target).mtimeMs, before.mtime);
+  assert.deepEqual(fs.readdirSync(path.join(root, '.agent-policy/backups')), backups);
+});
+
 test('refus, EOF et confirmation générique ne modifient aucun fichier', t => {
   for (const input of ['', 'oui\n', 'INSTALLER /incorrect\n']) {
     const root = temporary(t);
