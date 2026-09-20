@@ -129,6 +129,11 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
     La parité du critère 14 porte sur les trois formes confiées côté Claude ; l’accord du
     critère 15 sur `--upload-pack` concerne Claude, selon l’arbitrage explicite du user.
     Aucun retrait d’allow Codex de main. (DoD 14, 15, 16)
+11. **Compatibilité des classes de risque avec les consommateurs** — classer `env` en
+    `arbitrary-execution`, car `env <commande>` exécute un programme, sans changer sa décision.
+    Refuser dans `validatePolicy` et dans le schéma toute entrée `prompt` ou `forbidden`
+    portant `read-only` ou `local-reversible`, et toute entrée `allow` portant une classe de
+    refus. Conserver toutes les décisions du socle. (DoD 17, 18)
 
 ### Format de délégation visé par l'item 7
 
@@ -180,6 +185,8 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 15. git fetch ne demande plus d'accord ; git fetch --upload-pack=<programme> en demande un.
 16. Le rejeu classe sous une famille nommée toute commande dont le programme appartient au
     vocabulaire fixe, et n'affiche toujours aucun argument ni commande intégrale.
+17. Toute entrée prompt ou forbidden du socle porte une des six classes de refus.
+18. Une politique qui enfreint cette règle est refusée à la validation, avant toute écriture.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 

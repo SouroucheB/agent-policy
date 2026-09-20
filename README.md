@@ -280,7 +280,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "994afe748bdddf97bc9975775dcd17afeef64c3ec4a5af46163655177b634dc8",
+    "sha256": "fce00a2ce88ffe31627613cf4e682e1bced5ebaf3e97700a417d3e0386f70c10",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },
@@ -723,6 +723,18 @@ agents et du sandbox ; cela ne signifie pas automatiquement `forbidden`.
 
 Les risques sont `destructive-program`, `remote-publication`, `cloud-mutation`, `paid-provider`,
 `shared-local-state`, `arbitrary-execution`, `read-only`, `local-reversible`.
+
+Le schéma et `validatePolicy` imposent le même contrat à toutes les entrées, quels que soient
+leurs moteurs : `allow` exige `read-only` ou `local-reversible` ; `prompt` et `forbidden`
+exigent une des six classes de refus (`destructive-program`, `remote-publication`,
+`cloud-mutation`, `paid-provider`, `shared-local-state`, `arbitrary-execution`). Une
+incompatibilité échoue à la validation avant toute écriture, pour le socle comme pour une
+couche de dépôt. Les consommateurs tels que le harness Mastra peuvent ainsi traiter les
+refus avec ce vocabulaire fermé.
+
+`env` est classé `arbitrary-execution` : `env <commande>` peut lancer un programme arbitraire,
+et la forme sans argument peut afficher des secrets de l’environnement. Sa décision reste
+`prompt`, pour Claude et ses miroirs RTK ; aucune autre entrée du socle n’est reclassée.
 
 ## Arbitrage des variantes dangereuses
 

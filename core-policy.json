@@ -8200,8 +8200,8 @@
         "claude"
       ],
       "decision": "prompt",
-      "riskClass": "read-only",
-      "justification": "Peut afficher des jetons de l’environnement ou exécuter une commande.",
+      "riskClass": "arbitrary-execution",
+      "justification": "env <commande> exécute un programme arbitraire ; sans argument, env peut afficher des secrets de l’environnement. Accord requis.",
       "match": [
         "env"
       ],
