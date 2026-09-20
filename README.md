@@ -53,6 +53,12 @@ la confirmation invalide l’opération. Les liens symboliques sont refusés. Un
 déclenche une restauration ; une interruption brutale nécessite le retour arrière ci-dessous.
 Une installation déjà synchronisée est sans effet.
 
+Le diff retire d’abord les lignes communes au début et à la fin, puis calcule les changements
+dans le milieu restant. Si ce milieu dépasse la borne de la LCS (4 000 000 couples de lignes),
+un bloc marqué « Diff simplifié » affiche toutes ses lignes retirées, puis toutes ses lignes
+ajoutées, sans troncature. Des lignes inchangées à l’intérieur de ce bloc peuvent alors être
+réaffichées ; les extrémités communes restent omises. La taille du diff ne bloque pas l’installation.
+
 Pour une simulation isolée, toutes les cibles, y compris les sauvegardes, sont sous la racine choisie :
 
 ```sh
