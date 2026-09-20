@@ -148,7 +148,7 @@ test('formes natives produites par le hook RTK : même décision que la commande
     ['npx vitest run', 'rtk vitest', 'allow', 'allow'],
     ['npx vitest run test/example.test.ts', 'rtk vitest test/example.test.ts', 'allow', 'allow'],
     ['npx playwright test', 'rtk playwright test', 'allow', 'allow'],
-    ['rg needle src', 'rtk rg needle src', 'prompt', 'allow'],
+    ['rg needle src', 'rtk rg needle src', undefined, 'allow'],
     ['find -delete file', 'rtk find -delete file', 'forbidden', 'forbidden'],
     ['ls src', 'rtk ls src', undefined, 'allow'],
     ['cat README.md', 'rtk read README.md', undefined, 'allow'],

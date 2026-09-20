@@ -562,15 +562,17 @@
         "npm",
         "ci"
       ],
-      "decision": "prompt",
-      "riskClass": "arbitrary-execution",
-      "justification": "Installe des dépendances et peut exécuter leurs scripts.",
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Installation exacte du lockfile, effet local réversible déjà confié aux wrappers de projet.",
       "match": [
+        "npm ci",
         "npm ci --ignore-scripts"
       ],
       "notMatch": [
         "npm view typescript"
-      ]
+      ],
+      "residualRisk": "Le lockfile, les dépendances et leurs scripts d’installation sont supposés de confiance ; accès réseau et cache npm possibles. Cette autorisation est un arbitrage explicite du user."
     },
     {
       "pattern": [
@@ -586,40 +588,6 @@
       ],
       "notMatch": [
         "npm audit --json"
-      ]
-    },
-    {
-      "pattern": [
-        "rg"
-      ],
-      "decision": "prompt",
-      "riskClass": "arbitrary-execution",
-      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
-      "match": [
-        "rg --pre arbitrary-command needle src"
-      ],
-      "notMatch": [
-        "git status"
-      ],
-      "engines": [
-        "codex"
-      ]
-    },
-    {
-      "pattern": [
-        "sed"
-      ],
-      "decision": "prompt",
-      "riskClass": "arbitrary-execution",
-      "justification": "Codex ne peut pas filtrer toutes les options exécutables ou mutations ; la lecture avec gardes relève de Claude.",
-      "match": [
-        "sed -i 's/a/b/' file.txt"
-      ],
-      "notMatch": [
-        "git status"
-      ],
-      "engines": [
-        "codex"
       ]
     },
     {
@@ -2517,12 +2485,15 @@
       ],
       "decision": "forbidden",
       "riskClass": "arbitrary-execution",
-      "justification": "Un préprocesseur peut exécuter du code ; interdire aussi la forme exprimable en sous-préfixe Codex.",
+      "justification": "Préprocesseur refusé par Claude ; Codex conserve la commande dans son sandbox sans règle supplémentaire.",
       "match": [
         "rtk grep --pre custom-command needle"
       ],
       "notMatch": [
         "rtk grep needle src"
+      ],
+      "engines": [
+        "claude"
       ]
     },
     {

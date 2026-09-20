@@ -2,7 +2,7 @@
 
 Une source JSON traduit les décisions de commandes pour **Codex et Claude Code**.
 Le socle global est dans [`core-policy.json`](core-policy.json) ; chaque dépôt garde
-sa propre couche, une copie autonome du générateur et une commande de brief. Node.js ≥ 22, aucune dépendance
+sa propre couche, une copie versionnée du socle, un générateur autonome et une commande de brief. Node.js ≥ 22, aucune dépendance
 d’exécution ou de test, JavaScript sans casts. Les échanges et la documentation sont en français.
 
 ## Installer l’outil sur chaque machine
@@ -13,7 +13,7 @@ Depuis un checkout de cette PR, puis de la version relue et fusionnée :
 npm test
 mkdir -p .agent-tmp
 npm pack --pack-destination .agent-tmp
-npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.2.0.tgz
+npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.3.0.tgz
 agent-policy --help
 ```
 
@@ -97,15 +97,21 @@ Structure à versionner dans le projet :
 
 ```text
 agent-policy/policy.json              # source du dépôt, vide mais valide à l'initialisation
-scripts/agent-policy/generate.mjs     # copie autonome avec en-tête de version
+agent-policy/core-policy.json         # copie exacte du socle de l'outil
+agent-policy/core-policy.version.json # version de l'outil et SHA-256 de cette copie
+scripts/agent-policy/generate.mjs     # copie autonome avec version et socle embarqué
 scripts/agent-policy/brief.mjs        # commande de brief autonome avec en-tête de version
 .codex/rules/project.rules           # sortie générée
 .claude/settings.json                # entrées Bash générées ; autres permissions et clés conservées
 ```
 
 `init` conserve les fichiers existants et ajoute les copies absentes. `agent-policy init --upgrade`
-rafraîchit le générateur et la commande `brief` depuis l’outil installé, sans modifier un octet de `policy.json`.
+rafraîchit le socle, sa version, le générateur et la commande `brief` depuis l’outil installé,
+sans modifier un octet de `policy.json`.
 Ces deux commandes sont idempotentes. Une source existante invalide fait échouer l’opération.
+Le champ `version: 1` des politiques reste la version de leur **format**. Le fichier
+`core-policy.version.json` porte la version de livraison du socle (1.3.0) et son empreinte,
+sans ajouter de champ ni changer le format de la politique du dépôt.
 
 La gate du projet appelle sa **copie versionnée**, sans outil global, paquet à télécharger ni réseau :
 
@@ -116,6 +122,11 @@ node scripts/agent-policy/generate.mjs check
 Pour régénérer avec cette même copie : `node scripts/agent-policy/generate.mjs build`.
 `check` reconstruit les sorties en mémoire, compare les fichiers et vérifie les exemples des deux
 moteurs. Une édition manuelle des règles Codex ou des entrées Bash générées fait échouer le contrôle.
+Il compare aussi, octet pour octet, la copie du socle et son fichier de version avec le socle
+embarqué dans ce générateur. Une copie manquante ou modifiée fait échouer `check`, `build` et
+l’API de consommation avant toute écriture ; `init --upgrade` la rétablit. `build` continue
+de générer uniquement les permissions de la couche du projet. Copier le socle ne l’installe pas
+dans les réglages des agents et ne lit pas les réglages personnels de la machine.
 Le générateur possède **uniquement les entrées `Bash(...)`** des listes `allow`, `ask` et `deny` :
 les anciennes entrées Bash sont remplacées par celles de la politique. Les entrées `Read`, `Write`,
 `Edit`, `mcp__…` et toutes les autres permissions non-Bash sont conservées dans leur ordre existant,
@@ -133,6 +144,42 @@ l’écriture des fichiers, y compris pendant une installation.
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
 un binaire présent qui échoue ou donne un verdict différent l’est. Ce contrôle reste hors ligne
 et isole l’état éventuel du processus Codex dans `.agent-tmp/`, ensuite nettoyé.
+
+## Consommer la politique depuis le code
+
+Un harness Mastra ou une gate CI peut importer le générateur versionné du dépôt sans dépendance
+externe ni outil global. `decisionForCommand(root, commande, moteur)` vérifie la copie du socle,
+charge `agent-policy/policy.json`, puis combine leurs décisions pour `codex` ou `claude`.
+Chaque couche garde ses `commandPrefixes` (RTK et RTK proxy par défaut) et son ciblage `engines`.
+La priorité entre les couches et les gardes est `forbidden > prompt > allow`. La couche du
+projet peut renforcer le socle ; elle ne peut pas assouplir sa décision.
+
+Exemple de garde d’un harness, dans un module à la racine du dépôt :
+
+```js
+import { decisionForCommand } from './scripts/agent-policy/generate.mjs';
+
+export function assertSandboxCommand(root, command) {
+  const decision = decisionForCommand(root, command, 'codex');
+  if (decision === 'prompt' || decision === 'forbidden') {
+    throw new Error(`Commande refusée dans le sandbox du harness : ${decision}`);
+  }
+  // L'exécution reste soumise au sandbox et aux contrôles propres du harness.
+  return decision;
+}
+```
+
+L’API renvoie `'allow'`, `'prompt'`, `'forbidden'` ou `undefined` en l’absence de règle.
+Par exemple : `git push` et `rtk git push` → `prompt`, `rm -rf x` → `forbidden`,
+`npm run test:gate` → `allow` si ce script est autorisé par la couche du projet,
+commande inconnue → `undefined`. `undefined` ne vaut pas autorisation de sortir du sandbox.
+Le choix du moteur est explicite : les lectures Claude ne créent aucune règle Codex.
+
+Les commandes acceptées sont des chaînes représentant un argv simple, selon la grammaire du
+générateur : pas de pipeline, redirection, expansion ni enchaînement shell. Un moteur inconnu,
+une commande hors grammaire, une source invalide, un lien symbolique ou un socle désynchronisé
+lève une erreur ; le consommateur doit alors refuser l’exécution. L’API ne lance aucune commande,
+ne génère aucun fichier et ne remplace ni l’analyse shell de l’agent ni le sandbox du harness.
 
 ## Produire un brief de délégation
 
@@ -290,6 +337,8 @@ Codex, y compris ceux des miroirs.
 
 Principe du socle : **une lecture que le sandbox Codex exécute déjà ne reçoit pas de règle Codex**.
 Une règle Codex `allow` autorise la sortie du sandbox ; elle n’est pas nécessaire pour ces lectures.
+Ce principe exclut aussi les règles `prompt` et `forbidden` pour les lectures et utilitaires
+confinés au workspace. En particulier, `rg --pre` et `sed -i` restent dans le sandbox Codex.
 Les lectures Git et RTK, les utilitaires et les écritures relatives décrits ci-dessous ciblent donc
 Claude seul. `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés
 conservent leurs autorisations pour les deux moteurs.
@@ -329,7 +378,7 @@ Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
 | `rtk git status` | aucune règle du socle | allow |
 | `rtk git push origin main` | prompt | ask |
 | `rtk proxy rm file` | forbidden | deny |
-| `rtk rg needle src` | prompt | allow |
+| `rtk rg needle src` | aucune règle du socle | allow |
 | `rtk proxy cat README.md` | aucune règle du socle | allow |
 | `rtk proxy cat .env` | aucune règle du socle | deny |
 
@@ -400,7 +449,14 @@ filtres et pagers Git existants restent supposés de confiance, comme le précis
 Le socle autorise pour **Claude uniquement** : `ls`, `cat`, `head`, `tail`, `grep`, `wc`, `sort`,
 `rg`, `sed -n`, `echo`, `printf`, `pgrep`, `xxd`, `dig`, `pbpaste` et `which`. Ces règles évitent une
 demande Bash à chaque lecture. Elles ne modifient pas les permissions de lecture dans le sandbox
-Codex ; `rg` et `sed` restent en `prompt` côté Codex, ainsi que leurs miroirs.
+Codex ; `rg` et `sed` n’ont aucune règle Codex, ainsi que leurs miroirs.
+
+L’audit des prompts du socle a retiré les anciens prompts Codex `rg` et `sed`, en conservant
+leurs lectures et gardes Claude existantes. L’entrée `forbidden` `rtk grep --pre` cible désormais
+Claude seul. Liste complète des formes retirées de la sortie Codex : `rg`, `rtk rg`,
+`rtk proxy rg`, `sed`, `rtk sed`, `rtk proxy sed`, `rtk grep --pre`, `rtk rtk grep --pre`,
+`rtk proxy rtk grep --pre`. Les autres prompts concernent les effets distants, l’état partagé
+ou les arbitrages explicites ci-dessous ; aucune autre lecture confinée n’a été identifiée.
 
 Les entrées allow de `cat`, `head`, `tail`, `grep`, `rg` et `sed` ciblant Claude exigent la garde
 canonique `<commande> *.env*`. `rg` exige aussi `rg *--pre*`. L’exception à l’interdiction de
@@ -411,7 +467,7 @@ conservent les refus d’écriture en place. `grep` porte aussi une garde `--pre
 
 Le miroir reproduit automatiquement ces gardes sous `rtk` et `rtk proxy`. Les commandes propres
 `rtk read`, `rtk grep` et `rtk diff` portent elles aussi les gardes `.env*`, et `rtk grep` la garde
-`--pre`. La forme `rtk grep --pre <programme>` a en plus un préfixe interdit pour les deux moteurs.
+`--pre`. La forme `rtk grep --pre <programme>` a aussi un préfixe interdit pour Claude seul.
 Un refus Claude est prioritaire sur une permission allow, y compris dans un autre motif.
 
 `pwd`, `date`, `which`, `node --version`, `npm --version`, `codex --version` et `rtk --version`
@@ -442,8 +498,8 @@ Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 | Formes | Limite |
 | --- | --- |
 | Lectures `.env*`, dont `rtk read` / `rtk grep` / `rtk diff` | Aucun filtrage des noms de fichiers par un préfixe argv. Les gardes de chemins sont propres à Claude ; les entrées Claude seules restent absentes de Codex. |
-| `npm audit … fix`, `git fetch … --upload-pack`, `rg … --pre`, `sed … -i/--in-place` | Impossible de filtrer une option en position libre ; `fetch`, `rg` et `sed` restent en prompt Codex. |
-| `rtk grep … --pre` ou `--pre=commande` | Le sous-préfixe exact `rtk grep --pre` est interdit ; les autres positions et valeurs collées échappent à ce préfixe Codex. |
+| `npm audit … fix`, `git fetch … --upload-pack` | Impossible de filtrer une option en position libre ; `fetch` reste en prompt Codex, comme le sous-préfixe exact `npm audit fix`. |
+| `rg … --pre`, `sed … -i/--in-place`, `rtk grep … --pre` ou `--pre=commande` | Aucune règle Codex pour ces utilitaires confinés au sandbox ; gardes Claude seules. |
 | `lsof … -D…`, `lsof -i:…`, `lsof -ti:…` | Options en position libre ou valeurs collées ; les formes `-i` / `-ti` / `-nP` autorisent encore des arguments suivants, même `-D`, côté Codex. |
 | `find … -delete/-exec`, `perl -pi*` / `-i*` | Position libre ou suffixe dans un token, comme pour les formes directes. |
 | Heredocs, `/bin/*`, `/usr/bin/*`, `/usr/local/bin/*`, `/opt/homebrew/bin/*`, `head-*`, `tail-*` | Syntaxe shell ou joker à l’intérieur du token exécutable ; gardes Claude seules. |
@@ -498,6 +554,8 @@ Choix explicites du socle après application de ce critère :
 | Git local | Hooks, filtres et pager existants supposés de confiance ; aucun `git -c …` n’est autorisé globalement. La création de worktree est l’opération locale réversible expressément prévue. |
 | `lsof` | Lectures `-i`, `-ti`, `-nP` autorisées explicitement. `-D` reste soumis à accord en préfixe Codex et refusé par garde Claude ; les options suffixes et valeurs collées restent une limite Codex. |
 | `npm audit` | `fix` canonique en `prompt`. Codex ne couvre pas `npm audit --json fix` avec ce sous-préfixe ; la limite est dans `residualRisk` et Claude dispose d’un refus supplémentaire. |
+| `npm ci` | `allow` sur les deux moteurs, risque `local-reversible` : installation exacte du lockfile, déjà confiée aux wrappers de projet. Dépendances et scripts d’installation supposés de confiance ; accès réseau/cache possibles. |
+| `npm audit fix`, `git restore`, `git worktree remove` | `prompt` conservé sur les deux moteurs, par arbitrage explicite : dépendances modifiées, travail non commité perdu ou worktree d’un autre chantier supprimé. |
 | `npx tsc --noEmit` | Compilateur installé et configuration locale de confiance nécessaires ; le préfixe ne vérifie pas leur présence. `npx` peut télécharger un paquet absent. Réactivation de l’émission acceptée comme effet local réversible. |
 | `docker compose` | Lectures `ls`, `ps`, `images`, `top` distinguées des mutations. La lecture de configuration/environnement par Compose suppose un projet de confiance, explicitée dans `residualRisk`. |
 | `npx supabase status` | `prompt` également, car `-o env` peut exposer les clés locales. |
@@ -566,6 +624,7 @@ les dérives Bash et les ajouts non-Bash manuels, deux dépôts
 autonomes, `init --upgrade`, le contrôle natif optionnel, la confirmation d’installation,
 les sauvegardes, le retour arrière, les échecs d’écriture, les 31 refus globaux et les 2 wrappers
 simulés (formes directes et RTK), la post-condition Claude, le contrat/rendu exact des briefs,
-le ciblage `engines`, les miroirs hérités par les dépôts, les formes natives RTK, la session courante,
+le ciblage `engines`, les miroirs hérités par les dépôts, les formes natives RTK, les sessions courantes,
+la copie versionnée du socle, ses dérives et l’API autonome de décision combinée,
 les gardes de lecture/écriture et les injections dans les jokers. Aucun appel fournisseur, aucun
 paquet téléchargé et aucune installation globale ne sont nécessaires.

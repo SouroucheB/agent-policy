@@ -111,7 +111,7 @@ test('les lectures RTK propres sont autorisées pour Claude, avec gardes et sans
   }
   for (const prefix of prefixes) {
     for (const command of ['rtk read .env', 'rtk grep needle config/.env.local', 'rtk diff old.txt .env', 'rtk grep needle --pre=command']) assert.equal(claudeDecision(prefix + command), 'forbidden', prefix + command);
-    assert.equal(decisionFor(core, prefix + 'rtk grep --pre command needle'), 'forbidden');
+    assert.equal(decisionFor(core, prefix + 'rtk grep --pre command needle'), undefined);
   }
   for (const list of Object.values(permissions)) assert.equal(new Set(list).size, list.length);
   // Collision entre un préfixe déclaré et une entrée explicite : même décision, exemples réunis.
@@ -134,13 +134,12 @@ test('lectures Claude autorisées : moteurs séparés et gardes .env/--pre prior
       }
     }
     for (const command of ['rg --pre command needle', 'rg needle --pre=command', 'sed -n -i 1p file', 'sed -n --in-place 1p file']) assert.equal(claudeDecision(prefix + command), 'forbidden');
-    assert.equal(decisionFor(core, prefix + 'rg needle src'), 'prompt');
-    assert.equal(decisionFor(core, prefix + 'sed -n 1p file'), 'prompt');
+    assert.equal(decisionFor(core, prefix + 'rg needle src'), undefined);
+    assert.equal(decisionFor(core, prefix + 'sed -n 1p file'), undefined);
     assert.equal(decisionFor(core, prefix + 'cat README.md'), undefined);
   }
   const codex = generateCodex(core);
   for (const rule of core.entries.filter(entry => entry.engines?.length === 1 && entry.engines[0] === 'claude')) {
-    if (['rg', 'sed', 'grep', 'ls'].includes(rule.pattern[0])) continue; // règles Codex distinctes ou commande RTK propre
     for (const prefix of [[], ['rtk'], ['rtk', 'proxy']]) assert.equal(codex.includes(`pattern=${JSON.stringify([...prefix, ...rule.pattern])},`), false);
   }
 });
