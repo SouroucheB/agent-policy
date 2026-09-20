@@ -308,7 +308,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "f267d5c5db3a2ec4ff26bbbc8fb52fb989dcb44ca9e2818b605a7cc6ce1c896d",
+    "sha256": "93238d78e9335dbb9532c3631a07f1612bfcadc2b034076bb35e9a7c32c341eb",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },
@@ -435,13 +435,15 @@ Ce principe exclut aussi les règles `prompt` et `forbidden` pour les lectures e
 confinés au workspace. Une exception explicite autorise désormais les filtres `rg`, `grep`,
 `head`, `tail`, `wc`, `sort`, `cut`, `jq` côté Codex, miroirs RTK compris. Leur `residualRisk`
 documente la sortie du sandbox, notamment `rg --pre`, le miroir natif `rtk grep --pre` et les
-options libres de `sort`. `sed`, `awk` et `uniq` restent sans règle Codex : pour `uniq`, une
+options libres de `sort`. `sed` sans `-n`, `awk` et `uniq` restent sans règle Codex : pour `uniq`, une
 règle de préfixe ne saurait garantir l’absence d’un argument désignant un fichier de sortie.
 Une seconde exception explicite autorise les neuf lectures Git détaillées plus bas, afin
 qu’un composé comme `rg --files src && git diff --check && lsof -ti :3001` soit allow
 segment par segment, même si `lsof` demande une sortie du sandbox. `git fetch`, qui accède
 au dépôt distant, est également autorisé pour les deux moteurs selon l’arbitrage décrit plus
-bas. Les autres lectures Git, utilitaires et écritures relatives continuent de cibler Claude seul.
+bas. Une troisième exception ajoute `sed -n`, `cat` et `ls` côté Codex pour les composés
+comme `lsof -ti :3001 && sed -n '1,20p' f && cat g && ls d`. Les autres lectures Git,
+utilitaires et écritures relatives continuent de cibler Claude seul.
 `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés conservent
 leurs autorisations pour les deux moteurs.
 Les lectures réseau `gh pr checks` et `gh run view` restent également en allow pour les deux
@@ -483,8 +485,8 @@ Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
 | `rtk git push origin main` | prompt | ask |
 | `rtk proxy rm file` | forbidden | deny |
 | `rtk rg needle src` | allow | allow |
-| `rtk proxy cat README.md` | aucune règle du socle | allow |
-| `rtk proxy cat .env` | aucune règle du socle | deny |
+| `rtk proxy cat README.md` | allow | allow |
+| `rtk proxy cat .env` | allow | deny |
 
 Le socle déclare les deux préfixes ci-dessus. Une couche de dépôt en bénéficie sans les redéclarer :
 `npm run test:gate` génère aussi `rtk npm run test:gate` et `rtk proxy npm run test:gate` avec la
@@ -494,7 +496,7 @@ Les règles propres `rtk grep`, `rtk read`, `rtk ls`, `rtk diff`,
 préfixées sont également générées, sans expansion récursive. Les collisions de même motif et
 décision sont dédupliquées dans les sorties (exemples Codex réunis) ; des décisions différentes
 restent soumises à la priorité habituelle. Aucun `rtk` ou `rtk proxy` libre n’est autorisé.
-Le miroir de l’entrée `grep` Codex ajoute désormais un allow `rtk grep` séparé ; le programme
+Les miroirs des entrées `grep` et `ls` Codex ajoutent des allow `rtk grep` et `rtk ls` séparés ; le programme
 `rtk read`, même s’il peut remplacer `tail` via le hook, reste sans règle Codex.
 
 La génération teste la politique, sans exécuter RTK ni les commandes d’exemple. Elle ne garantit
@@ -714,6 +716,38 @@ citées sont protégés ; `report.env.integration.md` ne déclenche pas la garde
 le texte peut être un motif de recherche légitime : les gardes `.env*` sont en ask.
 Les allow concernés exigent ces gardes à la validation, avec celles des options sensibles.
 
+### Lectures sed -n, cat et ls côté Codex
+
+Trois entrées `engines: ["codex"]`, `decision: "allow"`, `riskClass: "read-only"`
+autorisent `sed -n`, `cat` et `ls`, ainsi que leurs formes `rtk` et `rtk proxy` : neuf
+règles Codex supplémentaires. Chaque segment peut ainsi participer à un composé qui
+comprend aussi une commande hors sandbox. Aucune permission Claude n’est modifiée.
+
+Pour sed, seul le préfixe exact `["sed", "-n"]` est admis par `validateAllow`. Ni `sed`
+seul, ni `sed -e`, `sed --quiet` ou `sed -nE` ne reçoivent d’allow Codex. Le `residualRisk`
+doit citer `-i` et `--in-place` : un préfixe ne peut pas filtrer ces options à une autre
+position, risque accepté par le user comme `sort -o`. Les programmes sed eux-mêmes restent
+libres, notamment [`w` (écriture) et `e` sur GNU sed (exécution)](https://www.gnu.org/software/sed/manual/html_node/sed-commands-list.html) ; `-n` ne constitue pas une
+frontière d’écriture. Claude conserve ses gardes en ask pour `-i` / `--in-place` et ses
+gardes `.env*` existantes.
+
+Les préfixes `cat` et `ls` ne filtrent pas les noms `.env`, déjà lisibles dans le sandbox ;
+cette limite figure dans leurs `residualRisk`. `ls` affiche les noms et métadonnées, pas le
+contenu des fichiers. Les options GNU vérifiées dans les sources de
+[`cat`](https://github.com/coreutils/coreutils/blob/master/src/cat.c) et de
+[`ls`](https://github.com/coreutils/coreutils/blob/master/src/ls.c), ainsi que les options
+des manuels macOS locaux, n’offrent ni destination de fichier à écrire ni programme à lancer.
+Les redirections shell restent distinctes des options de ces programmes.
+
+`awk`, `uniq`, les lectures `find` et `git branch --list` restent sans règle Codex ; les
+refus destructifs `find -delete` / `find -exec` sont conservés. Le hook peut réécrire `cat`
+en `rtk read`, qui reste sans règle Codex : cette livraison ajoute les miroirs `rtk cat`
+et `rtk proxy cat`, sans nouvelle autorisation native `rtk read`.
+
+Après fusion, relancer `agent-policy install` pour actualiser les règles Codex installées,
+puis `agent-policy init --upgrade` dans chaque dépôt pour rafraîchir sa copie du socle.
+Cette livraison n’exécute aucune installation réelle.
+
 `pwd`, `date`, les lectures `--version`, `mkdir -p`, `cp` et `touch` restent Claude seuls.
 Les écritures relatives gardent leurs refus des chemins absolus et `.env*` ; les motifs
 ambigus de traversal et d’expansion demandent un accord. Ces gardes ne résolvent ni liens
@@ -733,7 +767,8 @@ Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 | `git -C …`, formes exactes `uniq` | Joker interne ou fin d’arguments non exprimables : aucune règle Codex. |
 | `git branch --list` | Aucune règle Codex : `--no-list -D` annulerait la lecture et permettrait une suppression. |
 | Lectures Git avec `--ext-diff`, `--output` ; `git grep -O` / `--open-files-in-pager` | Risques d’exécution et d’écriture acceptés explicitement dans les allow Codex ; aucune exclusion d’options libres. |
-| `.env*`, options sensibles d’`awk`, `sed`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour ces trois programmes. Les filtres Codex autorisés ne filtrent pas les chemins `.env*`. |
+| `.env*`, options sensibles d’`awk`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour awk et file. Les filtres Codex autorisés, cat et ls ne filtrent pas les chemins `.env*`. |
+| `sed -n … -i` / `--in-place` | Seul le préfixe exact `sed -n` est allow Codex, avec risque accepté comme `sort -o`. Les options en position libre et les programmes sed ne sont pas filtrés ; gardes Claude inchangées. |
 | `rg … --pre`, `rtk grep … --pre` | L’allow Codex explicite conserve cette capacité ; risque résiduel documenté. |
 | `sort -o`, `sort --compress-program` | Le préfixe Codex autorise aussi ces variantes, comme les arguments libres des autres filtres convenus. |
 | `git fetch … --upload-pack` | Allow Codex avec risque d’exécution accepté ; garde ask Claude. |
@@ -775,7 +810,7 @@ Question par préfixe : **la variante peut-elle nuire seule, sans étape préala
 - Option libre suffisante pour exécuter une commande ou écrire hors dépôt : aucun `allow`
   générique Codex par défaut. Les filtres explicitement convenus ci-dessus constituent une
   exception documentée, comme les lectures Git convenues et `git fetch --upload-pack` ;
-  `sed` et `awk` restent confinés.
+  `sed` sans `-n` et `awk` restent confinés.
 
 Les gardes supplémentaires Claude se déclarent dans la **même source**, avec leurs propres tests :
 

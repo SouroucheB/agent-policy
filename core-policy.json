@@ -12107,6 +12107,71 @@
         "git -C /worktree push origin main"
       ],
       "residualRisk": "Codex : --upload-pack peut exécuter un programme ; cette option libre, y compris sa valeur collée, ne peut pas être filtrée par préfixe. Risque accepté explicitement comme rg --pre et git diff --ext-diff. Claude demande un accord sur --upload-pack et -c, ainsi que sur les autres gardes d’options libres. Les transports, hooks et configuration Git existants sont supposés de confiance ; les objets et références locaux sont modifiés. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "pattern": [
+        "sed",
+        "-n"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture sed -n autorisée explicitement pour les commandes composées mêlant lectures et segments hors sandbox, miroirs RTK compris.",
+      "match": [
+        "sed -n '1,20p' f",
+        "sed -n 1p -i file",
+        "sed -n --in-place=.bak 1p file"
+      ],
+      "notMatch": [
+        "sed 1p file",
+        "sed -i -n 1p file",
+        "sed -nE 1p file"
+      ],
+      "residualRisk": "Le préfixe Codex exact sed -n ne peut pas filtrer -i / --in-place à une autre position ; risque accepté par le user, comme sort -o. Une règle allow autorise la sortie du sandbox. Les programmes sed restent libres, dont w (écriture) et e sur GNU sed (exécution), et les noms .env ne sont pas filtrés. Les gardes Claude restent propres à Claude ; RTK et sa configuration sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "cat"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture de fichiers autorisée explicitement pour les commandes composées avec un segment hors sandbox, miroirs RTK compris.",
+      "match": [
+        "cat g",
+        "cat -n README.md",
+        "cat .env"
+      ],
+      "notMatch": [
+        "head g",
+        "cat-other g"
+      ],
+      "residualRisk": "Le préfixe Codex ne filtre pas les noms .env, que le sandbox lit déjà ; risque accepté par le user. Une règle allow autorise la sortie du sandbox. Les gardes .env Claude sont conservées et ne s’appliquent pas à Codex ; RTK et sa configuration sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "ls"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture des noms et métadonnées de fichiers autorisée explicitement pour les commandes composées avec un segment hors sandbox, miroirs RTK compris.",
+      "match": [
+        "ls d",
+        "ls -la docs",
+        "ls -l .env"
+      ],
+      "notMatch": [
+        "lsof -ti :3001",
+        "ls-other d"
+      ],
+      "residualRisk": "Le préfixe Codex ne filtre pas les noms .env, que le sandbox lit déjà ; risque accepté par le user. Une règle allow autorise la sortie du sandbox. ls liste les noms et métadonnées sans lire le contenu des fichiers. Les permissions Claude sont conservées ; RTK et sa configuration sont supposés de confiance."
     }
   ]
 }

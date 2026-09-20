@@ -39,14 +39,15 @@ test('lectures Git Codex : neuf préfixes explicites, risques acceptés et miroi
 
 test('branch --list reste sans règle Codex, même avec --no-list et une mutation', () => {
   for (const prefix of prefixes) {
-    for (const command of ['git branch --list', 'git branch --list --no-list -D feature', 'git branch -D feature', 'sed -n 1p file', "awk '{print $1}' file", 'uniq -c']) {
+    for (const command of ['git branch --list', 'git branch --list --no-list -D feature', 'git branch -D feature', 'sed 1p file', "awk '{print $1}' file", 'uniq -c']) {
       assert.equal(decisionFor(core, prefix + command), undefined, prefix + command);
     }
     assert.equal(decisionFor(core, prefix + 'git branch --list --no-list -D feature', 'claude'), 'prompt');
   }
   for (const rule of expandEntries(core).filter(e => (e.engines ?? ['codex', 'claude']).includes('codex'))) {
     const argv = rule.pattern?.filter(token => !['rtk', 'proxy'].includes(token));
-    assert.ok(!argv || !['sed', 'awk', 'uniq'].includes(argv[0]), JSON.stringify(argv));
+    assert.ok(!argv || !['awk', 'uniq'].includes(argv[0]), JSON.stringify(argv));
+    if (argv?.[0] === 'sed') assert.deepEqual(argv, ['sed', '-n']);
     assert.notEqual(argv?.slice(0, 2).join(' '), 'git branch');
   }
 });

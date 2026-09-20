@@ -104,9 +104,9 @@ test('miroir RTK : décisions allow, prompt et forbidden préservées dans les d
   assert.throws(() => generateCodex(unsafePrefix), /interpréteur libre/);
 });
 
-test('lectures natives RTK : Claude et exception du miroir grep Codex', () => {
+test('lectures natives RTK : Claude et exceptions des miroirs grep/ls Codex', () => {
   for (const command of ['rtk grep needle src', 'rtk read README.md', 'rtk ls src', 'rtk diff before.txt after.txt', 'rtk gain', 'rtk discover', 'rtk session']) {
-    assert.equal(decisionFor(core, command), command.startsWith('rtk grep ') ? 'allow' : undefined, command);
+    assert.equal(decisionFor(core, command), /^(rtk grep|rtk ls) /u.test(command) ? 'allow' : undefined, command);
     assert.equal(claudeDecision(command), 'allow', command);
   }
   for (const prefix of prefixes) {
@@ -135,18 +135,18 @@ test('lectures Claude autorisées : moteurs séparés et gardes .env/--pre prior
     }
     for (const command of ['rg --pre command needle', 'rg needle --pre=command', 'sed -n -i 1p file', 'sed -n --in-place 1p file']) assert.equal(claudeDecision(prefix + command), command.startsWith('sed ') ? 'prompt' : 'forbidden');
     assert.equal(decisionFor(core, prefix + 'rg needle src'), 'allow');
-    assert.equal(decisionFor(core, prefix + 'sed -n 1p file'), undefined);
-    assert.equal(decisionFor(core, prefix + 'cat README.md'), undefined);
+    assert.equal(decisionFor(core, prefix + 'sed -n 1p file'), 'allow');
+    assert.equal(decisionFor(core, prefix + 'cat README.md'), 'allow');
   }
   const codex = generateCodex(core);
   for (const rule of core.entries.filter(entry => entry.engines?.length === 1 && entry.engines[0] === 'claude')) {
     if (!rule.pattern || core.entries.some(other => other.engines?.includes('codex') && JSON.stringify(other.pattern) === JSON.stringify(rule.pattern))) continue;
-    if (rule.pattern.join(' ') === 'rtk grep') continue; // miroir du filtre grep Codex
+    if (['rtk grep', 'rtk ls'].includes(rule.pattern.join(' '))) continue; // miroirs des lectures Codex
     for (const prefix of [[], ['rtk'], ['rtk', 'proxy']]) assert.equal(codex.includes(`pattern=${JSON.stringify([...prefix, ...rule.pattern])},`), false);
   }
 });
 
-test('validateAllow exige les gardes, réserve sed à Claude et exige residualRisk pour rg Codex', () => {
+test('validateAllow exige les gardes Claude et un moteur explicite pour rg/sed', () => {
   for (const name of ['cat', 'head', 'tail', 'grep', 'rg', 'sed']) {
     const source = core.entries.find(entry => entry.pattern?.[0] === name && entry.decision === 'allow');
     const field = ['grep', 'rg', 'sed'].includes(name) ? 'claudeAsk' : 'claudeDeny';
@@ -157,7 +157,7 @@ test('validateAllow exige les gardes, réserve sed à Claude et exige residualRi
   }
   for (const name of ['rg', 'sed']) {
     const source = core.entries.find(entry => entry.pattern?.[0] === name && entry.decision === 'allow');
-    for (const engines of [undefined, ...(name === 'sed' ? [['codex']] : []), ['claude', 'codex']]) {
+    for (const engines of [undefined, ['claude', 'codex']]) {
       const broader = structuredClone(source);
       if (engines === undefined) delete broader.engines;
       else broader.engines = engines;

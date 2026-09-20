@@ -148,10 +148,10 @@ test('uniq : seuls les argv fermés sans fichier sont autorisés, aucune règle 
   assert.equal(generateCodex(core).includes('pattern=["uniq"]'), false);
 });
 
-test('Codex : huit filtres autorisés avec miroir, sed et awk toujours confinés', () => {
+test('Codex : huit filtres autorisés avec miroir, sed sans -n et awk toujours confinés', () => {
   for (const prefix of prefixes) {
     for (const command of ['rg foo src', 'grep foo file', 'head file', 'tail file', 'wc file', 'sort file', 'cut -f1 file', 'jq . file']) assert.equal(decisionFor(core, prefix + command), 'allow');
-    for (const command of ['sed -n 1p file', "awk '{print $1}' file", 'cd docs']) assert.equal(decisionFor(core, prefix + command), undefined);
+    for (const command of ['sed 1p file', "awk '{print $1}' file", 'cd docs']) assert.equal(decisionFor(core, prefix + command), undefined);
   }
   const rg = core.entries.find(e => e.pattern?.[0] === 'rg' && e.engines?.[0] === 'codex');
   assert.match(rg.residualRisk, /--pre/u);

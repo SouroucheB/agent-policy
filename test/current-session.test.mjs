@@ -150,8 +150,7 @@ test('formes natives produites par le hook RTK : même décision que la commande
     ['npx playwright test', 'rtk playwright test', 'allow', 'allow'],
     ['rg needle src', 'rtk rg needle src', 'allow', 'allow'],
     ['find -delete file', 'rtk find -delete file', 'forbidden', 'forbidden'],
-    ['ls src', 'rtk ls src', undefined, 'allow'],
-    ['cat README.md', 'rtk read README.md', undefined, 'allow'],
+    ['ls src', 'rtk ls src', 'allow', 'allow'],
     ['grep needle src', 'rtk grep needle src', 'allow', 'allow'],
     ['wc -l README.md', 'rtk wc -l README.md', 'allow', 'allow'],
   ];
@@ -162,6 +161,9 @@ test('formes natives produites par le hook RTK : même décision que la commande
     }
   }
   assert.equal(decisionFor(core, 'tail -n 20 README.md'), 'allow');
+  assert.equal(decisionFor(core, 'cat README.md'), 'allow');
+  assert.equal(decisionFor(core, 'rtk read README.md'), undefined);
+  assert.equal(claudeDecision('rtk read README.md'), 'allow');
   assert.equal(decisionFor(core, 'rtk read README.md --tail-lines 20'), undefined);
   assert.equal(claudeDecision('rtk read README.md --tail-lines 20'), 'allow');
   for (const command of ['rtk tsc', 'rtk playwright install', 'rtk npm run unknown', 'rtk test program', 'rtk proxy unknown']) {
