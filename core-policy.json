@@ -25,7 +25,117 @@
       "notMatch": [
         "git apply patch.diff"
       ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement.",
+      "claudeAsk": [
+        {
+          "pattern": "git add --output*",
+          "match": [
+            "git add --output=value"
+          ],
+          "notMatch": [
+            "git add docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git add * --output*",
+          "match": [
+            "git add argument --output=value"
+          ],
+          "notMatch": [
+            "git add docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git add --ext-diff*",
+          "match": [
+            "git add --ext-diff=value"
+          ],
+          "notMatch": [
+            "git add docs/name--ext-diff.txt"
+          ]
+        },
+        {
+          "pattern": "git add * --ext-diff*",
+          "match": [
+            "git add argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git add docs/name--ext-diff.txt"
+          ]
+        },
+        {
+          "pattern": "git add --upload-pack*",
+          "match": [
+            "git add --upload-pack=value"
+          ],
+          "notMatch": [
+            "git add docs/name--upload-pack.txt"
+          ]
+        },
+        {
+          "pattern": "git add * --upload-pack*",
+          "match": [
+            "git add argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git add docs/name--upload-pack.txt"
+          ]
+        },
+        {
+          "pattern": "git add -c*",
+          "match": [
+            "git add -c=value"
+          ],
+          "notMatch": [
+            "git add docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git add * -c*",
+          "match": [
+            "git add argument -c=value"
+          ],
+          "notMatch": [
+            "git add docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git add --exec-path*",
+          "match": [
+            "git add --exec-path=value"
+          ],
+          "notMatch": [
+            "git add docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git add * --exec-path*",
+          "match": [
+            "git add argument --exec-path=value"
+          ],
+          "notMatch": [
+            "git add docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git add --config-env*",
+          "match": [
+            "git add --config-env=value"
+          ],
+          "notMatch": [
+            "git add docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git add * --config-env*",
+          "match": [
+            "git add argument --config-env=value"
+          ],
+          "notMatch": [
+            "git add docs/name--config-env.txt"
+          ]
+        }
+      ]
     },
     {
       "pattern": [
@@ -42,7 +152,117 @@
       "notMatch": [
         "git push origin main"
       ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement.",
+      "claudeAsk": [
+        {
+          "pattern": "git commit --output*",
+          "match": [
+            "git commit --output=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * --output*",
+          "match": [
+            "git commit argument --output=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git commit --ext-diff*",
+          "match": [
+            "git commit --ext-diff=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--ext-diff.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * --ext-diff*",
+          "match": [
+            "git commit argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--ext-diff.txt"
+          ]
+        },
+        {
+          "pattern": "git commit --upload-pack*",
+          "match": [
+            "git commit --upload-pack=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--upload-pack.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * --upload-pack*",
+          "match": [
+            "git commit argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--upload-pack.txt"
+          ]
+        },
+        {
+          "pattern": "git commit -c*",
+          "match": [
+            "git commit -c=value"
+          ],
+          "notMatch": [
+            "git commit docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * -c*",
+          "match": [
+            "git commit argument -c=value"
+          ],
+          "notMatch": [
+            "git commit docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git commit --exec-path*",
+          "match": [
+            "git commit --exec-path=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * --exec-path*",
+          "match": [
+            "git commit argument --exec-path=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git commit --config-env*",
+          "match": [
+            "git commit --config-env=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git commit * --config-env*",
+          "match": [
+            "git commit argument --config-env=value"
+          ],
+          "notMatch": [
+            "git commit docs/name--config-env.txt"
+          ]
+        }
+      ]
     },
     {
       "pattern": [
@@ -76,7 +296,10 @@
       "notMatch": [
         "git worktree remove sibling"
       ],
-      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle."
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. L’allow Codex existant est conservé ; Claude demande un accord, avec ou sans -C.",
+      "engines": [
+        "codex"
+      ]
     },
     {
       "pattern": [
@@ -361,23 +584,61 @@
         "git",
         "fetch"
       ],
-      "decision": "prompt",
-      "riskClass": "shared-local-state",
-      "justification": "Accès distant et références locales ; options exécutables jamais autorisées automatiquement.",
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Lit le dépôt distant et met à jour les objets et références locaux, sans publication distante ; autorisation explicite du user.",
       "match": [
-        "git fetch origin --upload-pack=custom-command"
+        "git fetch",
+        "git fetch --prune origin"
       ],
       "notMatch": [
         "git status"
       ],
-      "claudeDeny": [
+      "residualRisk": "Codex : --upload-pack peut exécuter un programme ; cette option libre, y compris sa valeur collée, ne peut pas être filtrée par préfixe. Risque accepté explicitement comme rg --pre et git diff --ext-diff. Claude demande un accord sur --upload-pack et -c, ainsi que sur les autres gardes d’options libres. Les transports, hooks et configuration Git existants sont supposés de confiance ; les objets et références locaux sont modifiés.",
+      "claudeAsk": [
+        {
+          "pattern": "git fetch --output*",
+          "match": [
+            "git fetch --output=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * --output*",
+          "match": [
+            "git fetch argument --output=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch --ext-diff*",
+          "match": [
+            "git fetch --ext-diff=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--ext-diff.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * --ext-diff*",
+          "match": [
+            "git fetch argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--ext-diff.txt"
+          ]
+        },
         {
           "pattern": "git fetch --upload-pack*",
           "match": [
             "git fetch --upload-pack=value"
           ],
           "notMatch": [
-            "git fetch docs/name--upload-packintegration.txt"
+            "git fetch docs/name--upload-pack.txt"
           ]
         },
         {
@@ -386,7 +647,61 @@
             "git fetch argument --upload-pack=value"
           ],
           "notMatch": [
-            "git fetch docs/name--upload-packintegration.txt"
+            "git fetch docs/name--upload-pack.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch -c*",
+          "match": [
+            "git fetch -c=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * -c*",
+          "match": [
+            "git fetch argument -c=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name-c.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch --exec-path*",
+          "match": [
+            "git fetch --exec-path=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * --exec-path*",
+          "match": [
+            "git fetch argument --exec-path=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch --config-env*",
+          "match": [
+            "git fetch --config-env=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * --config-env*",
+          "match": [
+            "git fetch argument --config-env=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--config-env.txt"
           ]
         }
       ]
@@ -8387,24 +8702,6 @@
           ]
         },
         {
-          "pattern": "git -C * fetch",
-          "match": [
-            "git -C target fetch"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
-          "pattern": "git -C * fetch *",
-          "match": [
-            "git -C target fetch target"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
           "pattern": "git -C * merge",
           "match": [
             "git -C target merge"
@@ -8507,42 +8804,6 @@
           "pattern": "git -C * switch *",
           "match": [
             "git -C target switch target"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
-          "pattern": "git -C * commit",
-          "match": [
-            "git -C target commit"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
-          "pattern": "git -C * commit *",
-          "match": [
-            "git -C target commit target"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
-          "pattern": "git -C * add",
-          "match": [
-            "git -C target add"
-          ],
-          "notMatch": [
-            "git -C /worktree status"
-          ]
-        },
-        {
-          "pattern": "git -C * add *",
-          "match": [
-            "git -C target add target"
           ],
           "notMatch": [
             "git -C /worktree status"
@@ -9098,46 +9359,6 @@
           ]
         },
         {
-          "pattern": "git -C -c*",
-          "match": [
-            "git -C -cvalue"
-          ],
-          "notMatch": [
-            "git -C docs/name-cintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git -C * -c*",
-          "match": [
-            "git -C argument -cvalue"
-          ],
-          "notMatch": [
-            "git -C docs/name-cintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git -C * --exec-path*",
-          "match": [
-            "git -C /worktree --exec-path=/custom status",
-            "git -C /worktree status --exec-path"
-          ],
-          "notMatch": [
-            "git -C /worktree status",
-            "git -C /worktree diff -- docs/name--exec-path.txt"
-          ]
-        },
-        {
-          "pattern": "git -C * --config-env*",
-          "match": [
-            "git -C /worktree --config-env=alias.command=VARIABLE status",
-            "git -C /worktree status --config-env=alias.command=VARIABLE"
-          ],
-          "notMatch": [
-            "git -C /worktree status",
-            "git -C /worktree diff -- docs/name--config-env.txt"
-          ]
-        },
-        {
           "pattern": "git -C * grep -O*",
           "match": [
             "git -C /worktree grep -Oprogram"
@@ -9568,88 +9789,113 @@
           "notMatch": [
             "git -C /worktree status"
           ]
-        }
-      ],
-      "claudeDeny": [
+        },
         {
-          "pattern": "git -C * --output",
+          "pattern": "git -C --output*",
           "match": [
-            "git -C /worktree diff --output"
+            "git -C --output=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git -C * --output *",
+          "pattern": "git -C * --output*",
           "match": [
-            "git -C /worktree diff --output value"
+            "git -C /worktree commit -m example --output=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git -C * --output=*",
+          "pattern": "git -C --ext-diff*",
           "match": [
-            "git -C /worktree diff --output=value"
+            "git -C --ext-diff=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--ext-diff.txt"
           ]
         },
         {
-          "pattern": "git -C * --ext-diff",
+          "pattern": "git -C * --ext-diff*",
           "match": [
-            "git -C /worktree diff --ext-diff"
+            "git -C /worktree commit -m example --ext-diff=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--ext-diff.txt"
           ]
         },
         {
-          "pattern": "git -C * --ext-diff *",
+          "pattern": "git -C --upload-pack*",
           "match": [
-            "git -C /worktree diff --ext-diff value"
+            "git -C --upload-pack=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--upload-pack.txt"
           ]
         },
         {
-          "pattern": "git -C * --ext-diff=*",
+          "pattern": "git -C * --upload-pack*",
           "match": [
-            "git -C /worktree diff --ext-diff=value"
+            "git -C /worktree commit -m example --upload-pack=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--upload-pack.txt"
           ]
         },
         {
-          "pattern": "git -C * --upload-pack",
+          "pattern": "git -C -c*",
           "match": [
-            "git -C /worktree diff --upload-pack"
+            "git -C -c=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name-c.txt"
           ]
         },
         {
-          "pattern": "git -C * --upload-pack *",
+          "pattern": "git -C * -c*",
           "match": [
-            "git -C /worktree diff --upload-pack value"
+            "git -C /worktree commit -m example -c=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name-c.txt"
           ]
         },
         {
-          "pattern": "git -C * --upload-pack=*",
+          "pattern": "git -C --exec-path*",
           "match": [
-            "git -C /worktree diff --upload-pack=value"
+            "git -C --exec-path=value"
           ],
           "notMatch": [
-            "git -C /worktree diff --stat"
+            "git -C /worktree add docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --exec-path*",
+          "match": [
+            "git -C /worktree commit -m example --exec-path=value"
+          ],
+          "notMatch": [
+            "git -C /worktree add docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git -C --config-env*",
+          "match": [
+            "git -C --config-env=value"
+          ],
+          "notMatch": [
+            "git -C /worktree add docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --config-env*",
+          "match": [
+            "git -C /worktree commit -m example --config-env=value"
+          ],
+          "notMatch": [
+            "git -C /worktree add docs/name--config-env.txt"
           ]
         }
       ]
@@ -10154,6 +10400,121 @@
         "git -C /x status"
       ],
       "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Le mode moderne crée des objets Git locaux sans modifier les branches, l’index ou le worktree ; effet local réversible déjà accepté."
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "add"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "prompt",
+      "riskClass": "shared-local-state",
+      "justification": "Création de worktree soumise à accord côté Claude ; exception allow historique conservée côté Codex.",
+      "match": [
+        "git worktree add ../sibling -b feature/policy"
+      ],
+      "notMatch": [
+        "git worktree list"
+      ]
+    },
+    {
+      "claudePattern": "git -C * add",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git add sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree add"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "claudePattern": "git -C * add *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git add sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree add src/file"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "claudePattern": "git -C * commit",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git commit sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree commit"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "claudePattern": "git -C * commit *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git commit sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree commit -m message"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "claudePattern": "git -C * fetch",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git fetch sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree fetch"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Codex : --upload-pack peut exécuter un programme ; cette option libre, y compris sa valeur collée, ne peut pas être filtrée par préfixe. Risque accepté explicitement comme rg --pre et git diff --ext-diff. Claude demande un accord sur --upload-pack et -c, ainsi que sur les autres gardes d’options libres. Les transports, hooks et configuration Git existants sont supposés de confiance ; les objets et références locaux sont modifiés. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
+    },
+    {
+      "claudePattern": "git -C * fetch *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Parité Claude avec git fetch sans -C ; mêmes gardes d’options libres et aucun préfixe Codex variable.",
+      "match": [
+        "git -C /worktree fetch origin"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Codex : --upload-pack peut exécuter un programme ; cette option libre, y compris sa valeur collée, ne peut pas être filtrée par préfixe. Risque accepté explicitement comme rg --pre et git diff --ext-diff. Claude demande un accord sur --upload-pack et -c, ainsi que sur les autres gardes d’options libres. Les transports, hooks et configuration Git existants sont supposés de confiance ; les objets et références locaux sont modifiés. Le joker Claude peut englober plusieurs arguments ; les gardes ask peuvent également demander un accord pour un argument légitime. Aucune règle Codex pour git -C."
     }
   ]
 }

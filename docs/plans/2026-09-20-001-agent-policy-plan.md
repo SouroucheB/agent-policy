@@ -117,6 +117,18 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
    avant d’évaluer chaque segment, et ventile les commandes non analysées par cause : redirection
    vers fichier, substitution, structure shell, heredoc. Aucun retrait d’allow Codex de main,
    aucune règle Codex pour sed, awk ni uniq. (DoD 11, 12, 13)
+10. **Parité Git et familles du rejeu** — autoriser `git -C <chemin> add`, `commit` et `fetch`
+    côté Claude comme leurs formes sans `-C`, gardes d’options libres comprises. `git fetch`
+    devient allow pour les deux moteurs ; Claude demande un accord pour `--upload-pack` et
+    `-c`, tandis que Codex accepte le risque `--upload-pack` non filtrable par préfixe.
+    Aucune règle Codex pour `git -C`. Les éditeurs et programmes de signature configurés par
+    le user restent de confiance, avec un `residualRisk` explicite. `git worktree add` conserve
+    son allow Codex et demande un accord côté Claude. Élargir les familles fixes du rejeu à
+    sleep, kill, open, curl, bash, sh, chmod, mv, tee, xargs, time, brew, docker, supabase et psql ;
+    les chemins `./scripts/` et `scripts/` deviennent « script du dépôt », sans nom libre.
+    La parité du critère 14 porte sur les trois formes confiées côté Claude ; l’accord du
+    critère 15 sur `--upload-pack` concerne Claude, selon l’arbitrage explicite du user.
+    Aucun retrait d’allow Codex de main. (DoD 14, 15, 16)
 
 ### Format de délégation visé par l'item 7
 
@@ -164,6 +176,10 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 12. Une commande suivie d'une redirection bénigne reçoit le verdict de la commande seule ; une
     redirection vers un fichier reste non analysée.
 13. Le rejeu n'affiche toujours aucun argument ni commande intégrale.
+14. Une commande git reçoit la même décision avec ou sans -C, pour les deux moteurs concernés.
+15. git fetch ne demande plus d'accord ; git fetch --upload-pack=<programme> en demande un.
+16. Le rejeu classe sous une famille nommée toute commande dont le programme appartient au
+    vocabulaire fixe, et n'affiche toujours aucun argument ni commande intégrale.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 

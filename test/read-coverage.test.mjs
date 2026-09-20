@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  GIT_C_READS, GIT_C_MUTATIONS, UNIQ_FORMS, gitCMutationPatterns, generatePermissions, generateCodex,
+  GIT_C_COMMANDS, GIT_C_MUTATIONS, UNIQ_FORMS, gitCMutationPatterns, generatePermissions, generateCodex,
   compileClaudePermission, decisionFor, validatePolicy, validateExamples,
 } from '../lib/generate.mjs';
 import { readCore } from '../lib/system.mjs';
@@ -43,8 +43,8 @@ test('gardes ambiguës : comparaison awk, préfixes --pre et --output, noms rela
   ]) assert.equal(verdict(prefix + command), 'prompt', prefix + command);
 });
 
-test('git -C : toutes les lectures et tous les mutants à suffixe de lecture sont testés', () => {
-  for (const prefix of prefixes) for (const read of GIT_C_READS) {
+test('git -C : toutes les formes autorisées et tous les mutants à suffixe autorisé sont testés', () => {
+  for (const prefix of prefixes) for (const read of GIT_C_COMMANDS) {
     for (const suffix of ['', ' --verbose']) assert.equal(verdict(`${prefix}git -C /worktree ${read}${suffix}`), 'allow', `${prefix}git -C /worktree ${read}${suffix}`);
     for (const mutation of GIT_C_MUTATIONS) {
       const command = `${prefix}git -C /x ${mutation} origin ${read}`;
