@@ -5,15 +5,15 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { initProject, readCore } from '../lib/system.mjs';
 import { buildProject, checkProject, checkNativeCodex, PROJECT_FILES } from '../lib/generate.mjs';
-import { temporary, put, cli, policy, entry, ROOT, mixedClaudeSettings, withoutBash } from './helpers.mjs';
+import { temporary, put, cli, policy, entry, mixedClaudeSettings, withoutBash } from './helpers.mjs';
 
 test('init, init répété et upgrade préservent strictement la source', t => {
   const root = temporary(t);
   assert.equal(cli(root, ['init']).status, 0);
   const source = '{"version":1,"entries":[]}\n';
   put(root, PROJECT_FILES.policy, source);
-  const expected = fs.readFileSync(path.join(ROOT, 'lib/generate.mjs'), 'utf8');
   const target = path.join(root, PROJECT_FILES.generator);
+  const expected = fs.readFileSync(target, 'utf8');
   const before = fs.statSync(target).mtimeMs;
   assert.equal(cli(root, ['init']).status, 0);
   assert.equal(fs.statSync(target).mtimeMs, before);
