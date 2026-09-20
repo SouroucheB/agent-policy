@@ -161,7 +161,7 @@ test('replay JSONL récursif : deux couches, miroirs, compteurs exacts et aucun 
   assert.equal(result.engines.claude.total, 7);
   assert.deepEqual(result.engines.claude.verdicts, { allow: 3, aucune: 2, prompt: 1, forbidden: 1 });
   assert.equal(result.engines.claude.unsupported, 1);
-  assert.deepEqual(result.engines.codex.verdicts, { allow: 1, aucune: 1, prompt: 1, forbidden: 0 });
+  assert.deepEqual(result.engines.codex.verdicts, { allow: 2, aucune: 0, prompt: 1, forbidden: 0 });
   assert.equal(result.engines.codex.containers, 1);
   const output = renderReplay(result);
   assert.match(output, /rtk npm run \[…\] : 1/u);

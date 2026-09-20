@@ -143,6 +143,13 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
     commande littérale, par cause, sans exécuter leur contenu ni afficher d’argument.
     Utiliser exclusivement des historiques synthétiques pour les tests, sans modifier le
     socle ni les règles générées. (DoD 19, 20, 21)
+13. **Lectures courantes dans les composés Codex** — ajouter trois entrées `allow`,
+    `read-only`, réservées à Codex : le préfixe exact `["sed", "-n"]`, `cat` et `ls`, avec
+    leurs miroirs RTK. Documenter dans `residualRisk` les options libres `-i` / `--in-place`
+    de sed, acceptées comme `sort -o`, et les noms `.env` non filtrés de cat et ls, déjà
+    lisibles dans le sandbox. Adapter `validateAllow` sans changer les permissions Claude
+    ni leurs gardes. Cette exception remplace l’exclusion historique de sed dans l’item 9
+    uniquement pour le préfixe `sed -n`. Conserver tous les allow Codex existants. (DoD 22, 23, 24)
 
 ### Format de délégation visé par l'item 7
 
@@ -201,6 +208,9 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 20. Le rejeu n'évalue ni n'exécute jamais le contenu d'un conteneur, et n'affiche toujours aucun
     argument ni commande intégrale.
 21. Les conteneurs sans commande littérale restent comptés séparément, ventilés par cause.
+22. « lsof -ti :3001 && sed -n '1,20p' f && cat g && ls d » est allow pour Codex, segment par segment.
+23. sed sans -n, awk, uniq, find et git branch --list restent sans règle Codex.
+24. Les décisions Claude de sed, cat et ls sont inchangées, gardes comprises.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 
