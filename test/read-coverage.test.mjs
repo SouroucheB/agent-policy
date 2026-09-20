@@ -79,6 +79,27 @@ test('claudePattern : ciblage Claude, formes fermées et gardes Git obligatoires
   }
 });
 
+test('git -C : --exec-path et --config-env en ask, sans faux positif dans un chemin', () => {
+  for (const prefix of prefixes) for (const option of ['--exec-path', '--config-env']) {
+    assert.ok(permissions.ask.includes(`Bash(${prefix}git -C * ${option}*)`));
+    for (const argument of [option, `${option}=value`]) for (const command of [
+      `git -C /x ${argument} status`, `git -C /x log ${argument}`,
+    ]) {
+      assert.equal(verdict(prefix + command), 'prompt', prefix + command);
+      assert.equal(decisionFor(core, prefix + command, 'claude'), 'prompt');
+      assert.equal(decisionFor(core, prefix + command, 'codex'), undefined);
+    }
+    assert.equal(verdict(`${prefix}git -C /x diff -- docs/name${option}.txt`), 'allow');
+  }
+});
+
+test('lectures réseau gh : allow conservés pour les deux moteurs et leurs miroirs', () => {
+  for (const prefix of prefixes) for (const command of ['gh pr checks 7', 'gh run view 123']) {
+    assert.equal(verdict(prefix + command), 'allow');
+    assert.equal(decisionFor(core, prefix + command, 'codex'), 'allow');
+  }
+});
+
 test('filtres et lectures Claude : couverture du point 3, env et sqlite3 en prompt', () => {
   const commands = [
     'jq . report.json', "awk '{print $1}' file", 'uniq -c', 'cut -d : -f 1 file',

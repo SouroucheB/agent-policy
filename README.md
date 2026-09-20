@@ -394,6 +394,8 @@ règle de préfixe ne saurait garantir l’absence d’un argument désignant un
 Les lectures Git, les autres utilitaires et les écritures relatives ciblent Claude seul.
 `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés conservent
 leurs autorisations pour les deux moteurs.
+Les lectures réseau `gh pr checks` et `gh run view` restent également en allow pour les deux
+moteurs, avec leurs miroirs RTK : Codex doit pouvoir accéder au réseau sans redemander un accord.
 
 `commandPrefixes` est une option à la **racine de la politique**, indépendante de `engines` :
 
@@ -512,6 +514,8 @@ la même source. Les vrais `--pre` et `--output` (argument séparé ou `=valeur`
 les motifs plus larges pouvant attraper `--pre-glob` ou `--output-indicator-new` demandent
 un accord. Les gardes `--ext-diff`, `--upload-pack` et du pager `git grep` restent en deny.
 Les motifs `-c*` Git, parfois des options de lecture légitimes, sont en ask.
+Après `git -C`, `--exec-path*` et `--config-env*` sont aussi en ask, quelle que soit leur
+position parmi les arguments suivants ; une sous-chaîne dans un chemin ne les déclenche pas.
 
 **Une garde susceptible d’attraper un usage légitime est en `prompt` (`claudeAsk`), jamais en
 refus.** Cela vaut notamment pour l’écriture en place de sed, les gardes larges de chemins
@@ -688,6 +692,14 @@ Références des arbitrages : [`git diff --output`](https://git-scm.com/docs/git
 ```sh
 npm test
 ```
+
+Le test `test/codex-allow-retention.test.mjs` compare les allow Codex **générés**, miroirs compris,
+aux 96 allow de `main` au commit `6a7d8a089ee941cbd55eacf6b94197f71e7eef93`, conservés dans
+`test/fixtures/codex-allow-main.json`. Il ajoute les règles de `origin/main` (ou `main`) lorsque
+la référence locale existe, sans accès réseau. La copie versionnée maintient le contrôle dans
+les archives et checkouts CI superficiels. Tout retrait doit être nommé par son argv exact dans
+`documentedRemovals` du test, avec une justification reproduite dans ce README ; cette liste
+est actuellement vide. La référence ne se rafraîchit que depuis un `main` relu et fusionné.
 
 Les tests `node:test` couvrent le schéma, toutes les entrées et gardes du socle, la priorité des
 règles, les pièges de préfixe, les sorties, la préservation des hooks et des permissions non-Bash,

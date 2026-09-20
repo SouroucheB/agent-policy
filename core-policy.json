@@ -110,9 +110,6 @@
       ],
       "notMatch": [
         "gh pr close 12"
-      ],
-      "engines": [
-        "claude"
       ]
     },
     {
@@ -164,9 +161,6 @@
       ],
       "notMatch": [
         "gh run rerun 12"
-      ],
-      "engines": [
-        "claude"
       ]
     },
     {
@@ -9119,6 +9113,28 @@
           ],
           "notMatch": [
             "git -C docs/name-cintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --exec-path*",
+          "match": [
+            "git -C /worktree --exec-path=/custom status",
+            "git -C /worktree status --exec-path"
+          ],
+          "notMatch": [
+            "git -C /worktree status",
+            "git -C /worktree diff -- docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --config-env*",
+          "match": [
+            "git -C /worktree --config-env=alias.command=VARIABLE status",
+            "git -C /worktree status --config-env=alias.command=VARIABLE"
+          ],
+          "notMatch": [
+            "git -C /worktree status",
+            "git -C /worktree diff -- docs/name--config-env.txt"
           ]
         },
         {
