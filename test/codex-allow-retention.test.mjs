@@ -50,7 +50,7 @@ test('tous les allow Codex de main sont conservés, sauf retraits nommés et doc
   assert.equal(baseline.ref, 'main');
   assert.match(baseline.commit, /^[a-f0-9]{40}$/u);
   const reference = new Set(baseline.allow.map(identity));
-  assert.equal(reference.size, 96);
+  assert.equal(reference.size, 120);
   const pinned = sourceAt(baseline.commit);
   if (pinned) assert.deepEqual(reference, sourceAllow(pinned), 'la référence correspond exactement au commit main cité');
   const main = sourceAt('origin/main') ?? sourceAt('main');

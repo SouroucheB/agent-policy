@@ -108,6 +108,15 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
    Claude toute écriture hors du worktree actif, et le déclare dans .claude/settings.json ; repris
    de CoproOS scripts/claude-worktree-write-guard.cjs et de ses tests. Codex n'en reçoit pas : son
    sandbox workspace-write pose déjà cette frontière. (DoD 10)
+9. **Lectures Git Codex et précision du rejeu** — autoriser côté Codex `git status`, `diff`,
+   `log`, `show`, `rev-parse`, `ls-files`, `grep`, `worktree list` et `merge-tree`, miroirs RTK
+   compris, pour les composés mêlant lectures et commandes hors sandbox. Documenter les risques
+   acceptés `--ext-diff`, `--output` et `git grep -O` / `--open-files-in-pager` ; aucune règle
+   Codex pour `git branch --list`, qui peut être annulé par `--no-list` avant une suppression.
+   Le rejeu retire les redirections bénignes `2>&1`, `2>/dev/null`, `>/dev/null`, `&>/dev/null`
+   avant d’évaluer chaque segment, et ventile les commandes non analysées par cause : redirection
+   vers fichier, substitution, structure shell, heredoc. Aucun retrait d’allow Codex de main,
+   aucune règle Codex pour sed, awk ni uniq. (DoD 11, 12, 13)
 
 ### Format de délégation visé par l'item 7
 
@@ -150,6 +159,11 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
 10. Dans un dépôt initialisé, Claude ne peut créer, modifier ni supprimer aucun fichier hors de son
     worktree, et le README documente la limite connue : une commande autorisée côté Codex
     s'exécute hors sandbox.
+11. Le composé « rg --files … && git diff --check && lsof -ti :3001 » est allow pour Codex, segment
+    par segment.
+12. Une commande suivie d'une redirection bénigne reçoit le verdict de la commande seule ; une
+    redirection vers un fichier reste non analysée.
+13. Le rejeu n'affiche toujours aucun argument ni commande intégrale.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 

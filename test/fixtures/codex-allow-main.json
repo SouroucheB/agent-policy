@@ -1,8 +1,11 @@
 {
   "ref": "main",
-  "commit": "6a7d8a089ee941cbd55eacf6b94197f71e7eef93",
+  "commit": "8041307aa6d8c8376ee733decf1ec379274132eb",
   "allow": [
     [
+      "cut"
+    ],
+    [
       "docker",
       "compose",
       "images"
@@ -90,6 +93,15 @@
       "add"
     ],
     [
+      "grep"
+    ],
+    [
+      "head"
+    ],
+    [
+      "jq"
+    ],
+    [
       "lsof",
       "-i"
     ],
@@ -130,6 +142,13 @@
     ],
     [
       "ps"
+    ],
+    [
+      "rg"
+    ],
+    [
+      "rtk",
+      "cut"
     ],
     [
       "rtk",
@@ -238,6 +257,18 @@
     ],
     [
       "rtk",
+      "grep"
+    ],
+    [
+      "rtk",
+      "head"
+    ],
+    [
+      "rtk",
+      "jq"
+    ],
+    [
+      "rtk",
       "lsof",
       "-i"
     ],
@@ -288,6 +319,11 @@
       "rtk",
       "playwright",
       "test"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "cut"
     ],
     [
       "rtk",
@@ -415,6 +451,21 @@
     [
       "rtk",
       "proxy",
+      "grep"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "head"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "jq"
+    ],
+    [
+      "rtk",
+      "proxy",
       "lsof",
       "-i"
     ],
@@ -477,6 +528,11 @@
     [
       "rtk",
       "proxy",
+      "rg"
+    ],
+    [
+      "rtk",
+      "proxy",
       "rtk",
       "playwright",
       "test"
@@ -500,6 +556,21 @@
       "proxy",
       "rtk",
       "vitest"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "sort"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "tail"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "wc"
     ],
     [
       "rtk",
@@ -507,6 +578,10 @@
     ],
     [
       "rtk",
+      "rg"
+    ],
+    [
+      "rtk",
       "rtk",
       "playwright",
       "test"
@@ -530,6 +605,14 @@
     ],
     [
       "rtk",
+      "sort"
+    ],
+    [
+      "rtk",
+      "tail"
+    ],
+    [
+      "rtk",
       "tsc",
       "--noEmit"
     ],
@@ -541,6 +624,19 @@
     [
       "rtk",
       "vitest"
+    ],
+    [
+      "rtk",
+      "wc"
+    ],
+    [
+      "sort"
+    ],
+    [
+      "tail"
+    ],
+    [
+      "wc"
     ]
   ]
 }

@@ -32,7 +32,84 @@ test('le rejeu ne prétend pas interpréter substitutions, redirections ou progr
     assert.equal(evaluate(command).unsupported, true, command);
     assert.notEqual(evaluate(command).verdict, 'allow', command);
   }
-  assert.deepEqual(evaluate('cat <<EOF\ntext\nEOF'), { verdict: 'forbidden', unsupported: true });
+  assert.deepEqual(evaluate('cat <<EOF\ntext\nEOF'), { verdict: 'forbidden', unsupported: true, cause: 'heredoc' });
+});
+
+test('redirections bénignes : verdict identique, chaque moteur et chaque segment', () => {
+  const redirects = ['2>&1', '2>/dev/null', '>/dev/null', '&>/dev/null', '2> /dev/null', '>\t/dev/null', '&> /dev/null', '>/dev/null 2>&1', '2>&1 >/dev/null'];
+  for (const engine of ['claude', 'codex']) {
+    const decide = replayEvaluator([core], engine);
+    for (const command of ['git status', 'git push', 'rm x', 'unknown argument', 'rtk git diff --check', 'rtk proxy git log --oneline']) {
+      for (const redirect of redirects) {
+        assert.deepEqual(decide(`${command} ${redirect}`), decide(command), `${engine} ${command} ${redirect}`);
+      }
+    }
+    assert.deepEqual(decide('git status 2>&1 | head -n 5 >/dev/null && git push &>/dev/null'), { verdict: 'prompt', unsupported: false });
+    assert.deepEqual(decide('git status >/dev/null || rm x 2>/dev/null'), { verdict: 'forbidden', unsupported: false });
+  }
+  assert.deepEqual(splitShell('2>/dev/null git 2>&1 status'), ['git status']);
+  assert.deepEqual(evaluate('uniq -c 2>&1'), { verdict: 'allow', unsupported: false });
+});
+
+test('redirections : frontières de mots, guillemets et échappements préservés', () => {
+  for (const [command, parts] of [
+    ['git grep "2>&1" README.md 2>&1', ['git grep "2>&1" README.md']],
+    ["awk '$3 > 5 {print $1}' file >/dev/null", ["awk '$3 > 5 {print $1}' file"]],
+    ['echo file2>/dev/null', ['echo file2']],
+    ['git st>/dev/null atus', ['git st atus']],
+    ['git st>/dev/null\tatus', ['git st atus']],
+    ['echo "2">/dev/null', ['echo "2"']],
+    ['echo 2&>/dev/null', ['echo 2']],
+    [String.raw`echo 2\>\&1`, [String.raw`echo 2\>\&1`]],
+  ]) assert.deepEqual(splitShell(command), parts, command);
+  assert.equal(evaluate("awk '$3 > 5 {print $1}' file >/dev/null").verdict, 'prompt');
+  for (const command of ['git st>/dev/null atus', 'git status2>/dev/null']) assert.notEqual(evaluate(command).verdict, 'allow');
+});
+
+test('quatre causes fermées : autres redirections, substitutions, structures et heredocs', () => {
+  const groups = {
+    redirection: ['git status > file', 'git status >>/dev/null', 'git status 2>/dev/null.log', 'git status &>/dev/null/other', 'git status 12>/dev/null', 'git status 2>&10', 'git status 2>&1suffix', 'git status < file', 'git status >/dev/null"suffix"', 'git status 2>/dev/null > file', 'git status >|file', 'git status 2>&2'],
+    substitution: ['git status $(program)', 'echo `program`', 'echo "${VALUE}"', 'cat <(program)', 'echo >(/path/program)'],
+    structure: ['for x in a; do git status; done', 'if git status; then git push; fi', 'git status &&', 'git status & program', '(git status)', '{ git status; }', 'git "unterminated', 'git status # comment', '. script', 'git status\0'],
+    heredoc: ['cat <<EOF\ntext\nEOF', 'cat <<-EOF\ntext\nEOF', 'cat <<<word'],
+  };
+  for (const engine of ['claude', 'codex']) {
+    const decide = replayEvaluator([core], engine);
+    for (const [cause, commands] of Object.entries(groups)) {
+      for (const command of commands) {
+        const result = decide(command);
+        assert.equal(result.unsupported, true, command);
+        assert.equal(result.cause, cause, command);
+        assert.notEqual(result.verdict, 'allow', command);
+      }
+    }
+  }
+  // Une seule cause par commande : le premier obstacle rencontré.
+  assert.equal(evaluate('git status >file $(program)').cause, 'redirection');
+  assert.equal(evaluate('git status $(program) >file').cause, 'substitution');
+});
+
+test('rejeu JSONL : ventilation exacte par cause et aucune fuite de contenu', async t => {
+  const root = temporary(t);
+  const commands = [
+    'git status 2>&1', 'git status 2>/dev/null', 'git status >/dev/null', 'git status &>/dev/null',
+    'git status >PRIVATE_TARGET', 'git status $(PRIVATE_PROGRAM)',
+    'for PRIVATE_VAR in PRIVATE_VALUE; do git status; done', 'cat <<PRIVATE_MARKER\nPRIVATE_BODY\nPRIVATE_MARKER',
+  ];
+  put(root, 'history/session.jsonl', jsonl(commands.flatMap((command, i) => [claude(`c${i}`, command), codex(`x${i}`, 'exec_command', { cmd: command })])));
+  const result = await replayHistory(path.join(root, 'history'), root);
+  for (const stats of Object.values(result.engines)) {
+    assert.equal(stats.total, 8);
+    assert.equal(stats.verdicts.allow, 4);
+    assert.equal(stats.unsupported, 4);
+    assert.deepEqual(stats.unsupportedByCause, { redirection: 1, substitution: 1, structure: 1, heredoc: 1 });
+    assert.equal(Object.values(stats.unsupportedByCause).reduce((sum, count) => sum + count, 0), stats.unsupported);
+  }
+  const rendered = renderReplay(result);
+  assert.doesNotMatch(rendered, /PRIVATE|2>&1|dev\/null|git status 2|cat <</u);
+  for (const label of ['redirection vers fichier (ou autre redirection non prise en charge)', 'substitution', 'structure shell', 'heredoc']) {
+    assert.ok(rendered.includes(`Non analysées — ${label} : 1`));
+  }
 });
 
 test('formats Claude et Codex : uniquement les appels outils, aucun texte ou résultat exécuté', () => {

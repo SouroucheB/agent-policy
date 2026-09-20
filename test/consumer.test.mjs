@@ -58,10 +58,10 @@ test('session Codex courante : lectures confinées sans règle, filtres explicit
   for (const prefix of prefixes) {
     for (const command of [
       'sed -n 1,20p AGENTS.md', "sed -n '1770,1790p' AGENTS.md",
-      'cat README.md', 'ls -la docs', 'git diff --stat', 'git log --oneline -5',
-      'sed -i 1d file',
+      'cat README.md', 'ls -la docs', 'git branch --list', 'git branch --list --no-list -D feature',
+      'sed -i 1d file', "awk '{print $1}' file", 'uniq -c',
     ]) assert.equal(verdict(prefix + command), undefined, prefix + command);
-    for (const command of ['rg -n foo src', 'rg --pre program needle src']) assert.equal(verdict(prefix + command), 'allow');
+    for (const command of ['rg -n foo src', 'rg --pre program needle src', 'git diff --stat', 'git log --oneline -5']) assert.equal(verdict(prefix + command), 'allow');
     assert.equal(verdict(prefix + 'git push'), 'prompt');
     assert.equal(verdict(prefix + 'gh pr merge'), 'prompt');
     assert.equal(verdict(prefix + 'rm -rf x'), 'forbidden');

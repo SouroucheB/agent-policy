@@ -3747,7 +3747,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git status --short"
       ],
@@ -3897,7 +3897,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git diff --stat"
       ],
@@ -4047,7 +4047,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git log --oneline -8"
       ],
@@ -4197,7 +4197,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git show abc:path"
       ],
@@ -4347,7 +4347,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git rev-parse --short HEAD"
       ],
@@ -4497,7 +4497,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git grep needle"
       ],
@@ -4683,7 +4683,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git ls-files"
       ],
@@ -5767,7 +5767,7 @@
       ],
       "decision": "allow",
       "riskClass": "read-only",
-      "justification": "Lecture réservée à Claude ; Codex utilise son sandbox sans règle supplémentaire.",
+      "justification": "Lecture Git autorisée pour Claude avec ses gardes ; une entrée Codex distincte documente les risques acceptés hors sandbox.",
       "match": [
         "git worktree list --porcelain"
       ],
@@ -9957,6 +9957,203 @@
         "git -C /worktree push origin main"
       ],
       "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "pattern": [
+        "git",
+        "status"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git status --short"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "diff"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git diff --stat",
+        "git diff --output=report",
+        "git diff --check",
+        "git diff --ext-diff"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "log"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git log --oneline -8",
+        "git log --output=report"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "show"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git show abc:path",
+        "git show --output=report"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "rev-parse"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git rev-parse --short HEAD"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "ls-files"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git ls-files"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "grep"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git grep needle",
+        "git grep -Oprogram needle",
+        "git grep needle --open-files-in-pager=program"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. -O / --open-files-in-pager permettent de lancer un programme choisi dans la commande, sans configuration préalable ; risque accepté explicitement comme rg --pre."
+    },
+    {
+      "pattern": [
+        "git",
+        "worktree",
+        "list"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git worktree list --porcelain"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance."
+    },
+    {
+      "pattern": [
+        "git",
+        "merge-tree"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Réduire les accords sur les lectures Git composées avec des commandes autorisées hors sandbox.",
+      "match": [
+        "git merge-tree"
+      ],
+      "notMatch": [
+        "git push origin main",
+        "git branch --list",
+        "git -C /x status"
+      ],
+      "residualRisk": "Allow Codex explicite pour les commandes composées avec un segment hors sandbox, miroirs RTK compris. Les options --ext-diff (exécution externe) et --output (écriture de fichier), sur les sous-commandes qui les acceptent, ne sont pas filtrables en position libre par préfixe : risque accepté par le user. Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Le mode moderne crée des objets Git locaux sans modifier les branches, l’index ou le worktree ; effet local réversible déjà accepté."
     }
   ]
 }
