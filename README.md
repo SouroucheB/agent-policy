@@ -212,6 +212,14 @@ de JSON invalide n’est affiché, même en cas d’erreur. Les noms inconnus de
 Le lecteur ne suit aucun lien symbolique et ignore les noms `.env*`. Il n’écrit aucun fichier
 et n’exécute jamais les commandes de l’historique.
 
+Le vocabulaire fixe comprend aussi `sleep`, `kill`, `open`, `curl`, `bash`, `sh`, `chmod`,
+`mv`, `tee`, `xargs`, `time`, `brew`, `docker`, `supabase` et `psql`. Les sous-commandes Docker
+déjà nommées restent distinctes. Un programme relatif commençant par `./scripts/` ou `scripts/`
+est classé **script du dépôt** : aucun nom de script n’est affiché. Les formes citées et les
+préfixes RTK sont reconnus. Seuls les premiers mots statiques servent à la famille ; les
+arguments d’un interpréteur, les alias, les expansions et les chemins absolus ne sont pas
+résolus pour deviner un autre programme. Nommer une famille n’ajoute aucune autorisation.
+
 Formats pris en charge et limites :
 
 - Claude : messages assistant `message.content[].type = "tool_use"`, outil `Bash`,
@@ -272,7 +280,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "009a2aa34dd183c241b710948bb6e0d9b07008598f40aae8e51a99531fe6ce0f",
+    "sha256": "994afe748bdddf97bc9975775dcd17afeef64c3ec4a5af46163655177b634dc8",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },
@@ -403,8 +411,9 @@ options libres de `sort`. `sed`, `awk` et `uniq` restent sans règle Codex : pou
 règle de préfixe ne saurait garantir l’absence d’un argument désignant un fichier de sortie.
 Une seconde exception explicite autorise les neuf lectures Git détaillées plus bas, afin
 qu’un composé comme `rg --files src && git diff --check && lsof -ti :3001` soit allow
-segment par segment, même si `lsof` demande une sortie du sandbox. Les autres lectures Git,
-utilitaires et écritures relatives continuent de cibler Claude seul.
+segment par segment, même si `lsof` demande une sortie du sandbox. `git fetch`, qui accède
+au dépôt distant, est également autorisé pour les deux moteurs selon l’arbitrage décrit plus
+bas. Les autres lectures Git, utilitaires et écritures relatives continuent de cibler Claude seul.
 `git add`, `git commit`, `lsof`, les lanceurs de tests et les scripts npm nommés conservent
 leurs autorisations pour les deux moteurs.
 Les lectures réseau `gh pr checks` et `gh run view` restent également en allow pour les deux
@@ -495,21 +504,72 @@ réservé à `engines: ["claude"]`, permet les formes exactes de `uniq` et l’e
 Il conserve les assertions `match` / `notMatch` et suit les miroirs ; aucune règle Codex n’est
 inventée pour représenter un motif Claude.
 
-**Exception assumée : `git -C *` suivi d’une lecture fermée** : `status`, `diff`, `log`, `show`,
-`rev-parse`, `branch --list`, `ls-files`, `grep`, `merge-tree`, `worktree list`. Chaque lecture
+**Exception assumée : `git -C *` suivi d’une commande de la liste fermée** : `status`, `diff`,
+`log`, `show`, `rev-parse`, `ls-files`, `grep`, `merge-tree`,
+`add`, `commit`, `fetch`. Chaque commande
 possède un motif sans suffixe et un motif acceptant des arguments. Les chemins des worktrees
 ne sont pas énumérés. Aucun allow générique `git -C *` n’est produit.
 
-Un joker peut englober une sous-commande : les gardes `ask` couvrent donc `push`, `pull`,
-`fetch`, `merge`, `rebase`, `reset`, `restore`, `checkout`, `switch`, `commit`, `add`, `stash`,
-`clean`, `rm`, `tag`, les mutations de `branch`, `worktree` et `remote`, `config` et `gc`.
-Les écritures apparentées (`init`, `mv`, `apply`, `cherry-pick`, `revert`, mutations d’objets
-et maintenance) sont également gardées, ainsi que le lancement du pager de `git grep`.
-Le générateur refuse cette exception si une garde obligatoire manque. Les tests injectent
-`git push`, `gh pr merge`, `rm` et chaque mutation devant chaque suffixe de lecture, y compris
-`git -C /x push origin status`, sous RTK aussi : le résultat doit être `prompt` ou `forbidden`.
-Les autres motifs allow avec joker interne restent interdits. La garde `merge` respecte la
-frontière du mot pour ne pas bloquer la lecture `merge-tree`.
+Un joker peut englober une sous-commande : la protection est donc le complément de cette
+liste autorisée dans un **catalogue versionné de 150 sous-commandes Git**. `GIT_SUBCOMMANDS`,
+embarqué dans `lib/generate.mjs`, reprend toute la porcelaine, la plomberie, les commandes
+auxiliaires et les helpers de `git help -a --no-aliases --no-external-commands`, plus `lfs`
+et `svn`. La capture du 20 septembre 2026 avec Git 2.50.1 (Apple Git-155) est conservée dans
+`test/fixtures/git-help-all.txt` ; les rubriques d’interfaces documentaires ne sont pas des
+commandes. Le générateur et sa copie autonome ne lancent jamais `git help` à l’exécution.
+
+Pour chacune des **139 sous-commandes hors liste autorisée**, le socle déclare deux gardes
+`ask` : `git -C * <sous-commande>` et `git -C * <sous-commande> *`. Les miroirs `rtk` et
+`rtk proxy` reprennent ces gardes. Le générateur refuse toute exception dont une garde manque,
+même sur un seul miroir, ou dont une garde passe en deny. Les gardes d’options libres et du
+pager de `git grep` restent présentes. Les tests couvrent chaque mot du catalogue, les six
+contournements `difftool`, `submodule`, `filter-branch`, `lfs`, `svn`, `replace`, et les
+injections `git push`, `gh pr merge`, `rm` devant chaque suffixe autorisé.
+
+Conséquences acceptées de ces gardes textuelles : un message de commit ou un argument
+contenant un mot gardé peut demander un accord. `branch` et `worktree` ne sont pas des
+sous-commandes autorisées en entier : **`git -C … branch --list` et `git -C … worktree list`
+passent donc aussi en prompt**. Les lectures sans `-C` conservent leurs règles. Une sous-chaîne
+ne suffit pas : `merge` ne masque ni `merge-tree` ni un chemin `docs/merge.md`.
+Les autres motifs allow avec joker interne restent interdits.
+
+Ce catalogue est un instantané : une nouvelle sous-commande Git ou une extension autre que
+`lfs`/`svn` nécessite sa mise à jour versionnée ; les alias et exécutables tiers inconnus
+ne sont pas couverts par cette protection. Le test compare le catalogue à la capture Git
+et exige les deux gardes pour chaque sous-commande exclue.
+
+Contrôle de volume : le socle produit 3 176 permissions Claude (393 allow, 1 839 ask,
+944 deny), soit 119 788 octets de `settings.json`. Trois builds locaux du socle utilisé
+comme couche de projet ont pris 36, 35 et 51 ms. Le [schéma publié référencé par Claude
+Code](https://json.schemastore.org/claude-code-settings.json) n’impose pas de `maxItems`
+aux trois listes de permissions ; cela ne garantit pas les performances de toute version
+du client Claude. Aucun install réel n’est nécessaire pour ces mesures.
+
+La parité ajoutée pour `add`, `commit` et `fetch` concerne **Claude seulement** : `git add`
+et `git -C <chemin> add`, par exemple, sont allow et portent les mêmes gardes d’options libres.
+Les gardes génériques `git -C … add`, `commit`, `fetch` sont absentes ; `worktree` et
+`remote` restent entièrement en ask. **Aucune règle Codex pour `git -C`** : un préfixe
+littéral ne peut pas sauter un chemin variable, et autoriser `git -C` entier ouvrirait les
+mutations. Cette limite vaut aussi pour les miroirs RTK.
+
+`git add` et `git commit` restent allow pour les deux moteurs. Leur `residualRisk` précise
+que `--edit` lance l’éditeur configuré et que `git commit --gpg-sign` lance le programme de
+signature configuré. Le user accorde sa confiance à ces outils préconfigurés comme aux hooks
+déjà exécutés par commit. Ces variantes ne reçoivent pas de garde demandant un accord.
+
+`git fetch` est allow pour les deux moteurs : il lit le dépôt distant et modifie les objets
+et références locaux, sans publication distante (`local-reversible`). Claude demande un
+accord pour `--upload-pack` et `-c`, à toute position couverte par les gardes textuelles, avec
+ou sans `-C`. **Codex conserve le risque `--upload-pack`**, y compris `--upload-pack=<programme>` :
+un préfixe ne filtre pas cette option libre capable d’exécuter un programme. L’acceptation
+explicite est documentée dans `residualRisk`, comme pour `rg --pre` et `git diff --ext-diff`.
+
+Les mutations `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`, `stash` et les écritures
+de worktree restent soumises à accord côté Claude (règle explicite ou absence d’allow), avec
+ou sans `-C` ; les variantes déjà interdites, telles que `git reset --hard`, gardent leur refus.
+Les lectures comme `stash list` restent autorisées. **Écart assumé : `git worktree add` sans
+`-C` conserve son allow Codex historique ; Claude reçoit un prompt explicite.** Aucun allow
+Codex de main n’est retiré.
 
 Les lectures Git directes sont autorisées pour Claude : `status`, `diff`, `log`,
 `show`, `rev-parse`, `grep`, `ls-files`, `ls-tree`, `blame`, `remote -v`, `stash list`,
@@ -539,12 +599,59 @@ Les gardes d’options respectent désormais leur début d’argument. Par exemp
 motifs `sed -i*`, `sed * -i*`, `sed --in-place*`, `sed * --in-place*` remplacent `sed *-i*`.
 Un chemin contenant `-integration`, `-immutability`, `--pre`, `--output`, `--ext-diff`,
 `--upload-pack` ou `-c` ne suffit plus à déclencher ces gardes. Les miroirs sont dérivés de
-la même source. Les vrais `--pre` et `--output` (argument séparé ou `=valeur`) sont refusés ;
-les motifs plus larges pouvant attraper `--pre-glob` ou `--output-indicator-new` demandent
-un accord. Les gardes `--ext-diff`, `--upload-pack` et du pager `git grep` restent en deny.
+la même source. Pour les lectures protégées par un deny, les vrais `--pre` et `--output`
+(argument séparé ou `=valeur`) sont refusés ; les motifs plus larges pouvant attraper
+`--pre-glob` demandent un accord. `--output-indicator-new`, `--output-indicator-old` et
+`--output-indicator-context` restent allow grâce aux gardes bornées de `--output`.
+Les lectures Git directes comme `diff` et `log` gardent leurs deny sur
+`--ext-diff` et `--upload-pack` ; le pager de `git grep` garde aussi son deny direct.
 Les motifs `-c*` Git, parfois des options de lecture légitimes, sont en ask.
 Après `git -C`, `--exec-path*` et `--config-env*` sont aussi en ask, quelle que soit leur
 position parmi les arguments suivants ; une sous-chaîne dans un chemin ne les déclenche pas.
+Les gardes d’options partagées par les formes `git -C`, ainsi que celles de `add`, `commit`
+et `fetch` directs, sont toutes en ask : `--output`, `--ext-diff`, `--upload-pack`, `-c`,
+`--exec-path`, `--config-env`. Elles peuvent rencontrer un argument légitime, par exemple
+un message de commit parlant de `--output=…`. Le générateur exige ces ask pour autoriser les
+motifs `git -C` ; un deny ne peut pas les remplacer.
+
+Git accepte des [abréviations uniques d’options longues](https://git-scm.com/docs/gitcli).
+La table `GIT_OPTION_PREFIXES` de `lib/generate.mjs` fige les préfixes ci-dessous. Les listes
+complètes d’options dont elle dérive sont versionnées dans
+[`test/fixtures/git-long-options.json`](test/fixtures/git-long-options.json), capturées avec
+`git <commande> --git-completion-helper-all` sur Git 2.50.1 (Apple Git-155), le 20 septembre
+2026. Les tests recalculent le plus court préfixe unique depuis ces listes, hors ligne ; le
+générateur ne lance pas Git pour les obtenir. La liste du parseur de diff s’applique aussi à
+log, show, stash list et blame, qui lui transmettent leurs options de diff.
+
+| Commande / portée | Option gardée | Préfixe ajouté en ask | Options voisines ou justification |
+|---|---|---|---|
+| fetch | `--upload-pack` | `--upl*` | `--update-head-ok`, `--update-shallow`, `--unshallow` restent allow. |
+| grep | `--open-files-in-pager` | `--op*` | `--only-matching` et `--or` sont distincts. |
+| diff, log, show, stash list, blame | `--ext-diff` | `--ext*` | `--exit-code` reste allow. |
+| branch | `--delete` | `--d*` | Seule option commençant par d. |
+| branch | `--move` | `--mo*` | Épargne `--merged`. |
+| branch | `--copy` | `--cop*` | Épargne `--color`, `--column`, `--contains`. |
+| branch | `--force` | `--forc*` | Épargne `--format`. |
+| branch | `--create-reflog` | `--cr*` | Distinct des autres options commençant par c. |
+| branch | `--edit-description` | `--e*` | Seule option commençant par e. |
+| branch | `--set-upstream-to` | `--set-upstream-*` | `--set-upstream` est une autre option exacte, obsolète. |
+| branch | `--unset-upstream` | `--u*` | Seule option commençant par u. |
+| Gardes Git de sortie | `--output` | Aucun ; motifs bornés | Tout préfixe plus court que `--output` est ambigu avec les trois `--output-indicator-*`, donc refusé par git ; aucune abréviation n’existe. |
+| Options globales | `--exec-path`, `--config-env` | Aucun ; noms complets conservés | Le parseur global de [git.c](https://github.com/git/git/blob/v2.50.1/git.c) compare les noms complets sans accepter leur abréviation. |
+
+Les préfixes élargis sont **toujours ask, jamais deny**. Les formes complètes conservent leur
+décision : par exemple `git grep --open-files-in-pager=vim` reste refusé, et `git fetch
+--upload-pack=programme` reste soumis à accord. `--output*` est supprimé partout ; seuls
+`--output`, `--output=*`, `--output *` subsistent, en début d’argument comme après d’autres
+arguments, avec la décision complète antérieure. Les gardes suivent les deux miroirs RTK.
+Pour `git -C`, les préfixes abrégés sont ciblés sur la sous-commande concernée ; les formes
+branch et stash restent déjà en ask par le catalogue. Le générateur exige ces gardes en ask
+lorsqu’il valide une garde complète concernée ou l’exception `git -C`.
+
+`--edit` de add/commit et `--gpg-sign` de commit ne sont pas gardés : leurs programmes
+préconfigurés restent de confiance selon l’arbitrage existant. Le correctif d’abréviations
+ne change aucune règle Codex. Les listes d’options sont un instantané à actualiser avec Git ;
+un préfixe textuel peut aussi rencontrer un argument légitime, qui demande alors un accord.
 
 **Une garde susceptible d’attraper un usage légitime est en `prompt` (`claudeAsk`), jamais en
 refus.** Cela vaut notamment pour l’écriture en place de sed, les gardes larges de chemins
@@ -601,7 +708,9 @@ Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 | `.env*`, options sensibles d’`awk`, `sed`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour ces trois programmes. Les filtres Codex autorisés ne filtrent pas les chemins `.env*`. |
 | `rg … --pre`, `rtk grep … --pre` | L’allow Codex explicite conserve cette capacité ; risque résiduel documenté. |
 | `sort -o`, `sort --compress-program` | Le préfixe Codex autorise aussi ces variantes, comme les arguments libres des autres filtres convenus. |
-| `npm audit … fix`, `git fetch … --upload-pack` | Position libre non filtrable ; sous-préfixe `npm audit fix` et `git fetch` restent en prompt. |
+| `git fetch … --upload-pack` | Allow Codex avec risque d’exécution accepté ; garde ask Claude. |
+| `git worktree add` | Allow Codex sans `-C` conservé ; prompt Claude avec ou sans `-C`. |
+| `npm audit … fix` | Position libre non filtrable ; sous-préfixe `npm audit fix` en prompt. |
 | `lsof … -D…` | Le préfixe de lecture Codex ne sait pas exclure une option suffixe. |
 | `find … -delete/-exec`, `perl -pi*` / `-i*` | Position libre ou suffixe dans un token. |
 | Heredocs, exécutables absolus, `head-*`, `tail-*` | Syntaxe shell ou joker dans le nom exécutable ; gardes Claude seules. |
@@ -625,12 +734,13 @@ Question par préfixe : **la variante peut-elle nuire seule, sans étape préala
   dans le champ optionnel `residualRisk`. `npx tsc --noEmit false` reste ainsi autorisé.
 - Option libre suffisante pour exécuter une commande ou écrire hors dépôt : aucun `allow`
   générique Codex par défaut. Les filtres explicitement convenus ci-dessus constituent une
-  exception documentée ; `sed` et `awk` restent confinés, `git fetch` reste en prompt.
+  exception documentée, comme les lectures Git convenues et `git fetch --upload-pack` ;
+  `sed` et `awk` restent confinés.
 
 Les gardes supplémentaires Claude se déclarent dans la **même source**, avec leurs propres tests :
 
 ```json
-"claudeDeny": [
+"claudeAsk": [
   {
     "pattern": "git fetch * --upload-pack*",
     "match": ["git fetch origin --upload-pack=custom-command"],
@@ -639,9 +749,9 @@ Les gardes supplémentaires Claude se déclarent dans la **même source**, avec 
 ]
 ```
 
-Ce champ optionnel ajoute seulement des `deny` lorsque Claude est ciblé. Le champ `claudeAsk`
-a exactement la même forme (`pattern`, `match`, `notMatch`) et ajoute des `ask`, par exemple
-`git branch * -D*`. Les deux champs sont validés, testés et reproduits par les miroirs. Ils ne
+Ce champ optionnel ajoute seulement des `ask` lorsque Claude est ciblé, comme la garde
+`git branch * -D*`. Le champ `claudeDeny` a exactement la même forme (`pattern`, `match`,
+`notMatch`) et ajoute des `deny`. Les deux champs sont validés, testés et reproduits par les miroirs. Ils ne
 peuvent jamais assouplir la décision de l’entrée : `deny > ask > allow`.
 Les jokers sont des correspondances textuelles, potentiellement plus restrictives, sans analyse
 exhaustive des options combinées. Le générateur ne prétend pas inspecter le contenu d’un wrapper.
@@ -652,8 +762,9 @@ Choix explicites du socle après application de ce critère :
 
 | Famille | Choix et limite |
 | --- | --- |
-| Lectures Git | Préfixes simples Claude seuls, avec gardes sur les options libres. Codex les exécute dans son sandbox, sans règle allow qui l’en ferait sortir. Exception `git -C` Claude gardée, décrite ci-dessus. |
-| Git local | Hooks, filtres et pager existants supposés de confiance ; aucun `git -c …` n’est autorisé globalement. La création de worktree est l’opération locale réversible expressément prévue. |
+| Lectures Git | Neuf préfixes explicites Codex avec risques acceptés ; lectures Claude avec gardes. `git -C` reste Claude seul. |
+| Git local | Hooks, filtres, pager, éditeur et signature configurés supposés de confiance ; aucun `git -c …` n’est autorisé globalement. `worktree add` est allow Codex, prompt Claude. |
+| `git fetch` | Allow pour les deux moteurs sans `-C`, et Claude avec `-C`. `--upload-pack` / `-c` en ask Claude ; risque `--upload-pack` Codex accepté. |
 | `lsof` | Lectures `-i`, `-ti`, `-nP` autorisées explicitement. `-D` reste soumis à accord en préfixe Codex et soumis à accord par garde Claude ; les options suffixes et valeurs collées restent une limite Codex. |
 | `npm audit` | `fix` canonique en `prompt`. Codex ne couvre pas `npm audit --json fix` avec ce sous-préfixe ; la limite est dans `residualRisk` et Claude dispose d’un refus supplémentaire. |
 | `npm ci` | `allow` sur les deux moteurs, risque `local-reversible` : installation exacte du lockfile, déjà confiée aux wrappers de projet. Dépendances et scripts d’installation supposés de confiance ; accès réseau/cache possibles. |
@@ -721,6 +832,10 @@ Références des arbitrages : [`git diff --output`](https://git-scm.com/docs/git
 [négation des options Git](https://git-scm.com/docs/gitcli),
 [implémentation de `git branch`](https://github.com/git/git/blob/master/builtin/branch.c).
 
+Pour les arbitrages de parité : [`git add --edit`](https://git-scm.com/docs/git-add),
+[`git commit --edit` et `--gpg-sign`](https://git-scm.com/docs/git-commit),
+[`git fetch --upload-pack`](https://git-scm.com/docs/git-fetch).
+
 ## Vérification du dépôt de l’outil
 
 ```sh
@@ -728,7 +843,7 @@ npm test
 ```
 
 Le test `test/codex-allow-retention.test.mjs` compare les allow Codex **générés**, miroirs compris,
-aux 120 allow de `main` au commit `8041307aa6d8c8376ee733decf1ec379274132eb`, conservés dans
+aux 147 allow de `main` au commit `346abb309b0e943159d9fb73a8535105da1871b0`, conservés dans
 `test/fixtures/codex-allow-main.json`. Il ajoute les règles de `origin/main` (ou `main`) lorsque
 la référence locale existe, sans accès réseau. La copie versionnée maintient le contrôle dans
 les archives et checkouts CI superficiels. Tout retrait doit être nommé par son argv exact dans

@@ -205,3 +205,57 @@ test('les familles proviennent d’un vocabulaire fermé, jamais des arguments o
   assert.equal(commandFamily('gh SECRET_SUBCOMMAND arg'), 'gh');
   for (const name of ['constructor', 'toString', '__proto__']) assert.equal(commandFamily(name), 'autre');
 });
+
+const addedFamilies = ['sleep', 'kill', 'open', 'curl', 'bash', 'sh', 'chmod', 'mv', 'tee', 'xargs', 'time', 'brew', 'docker', 'supabase', 'psql'];
+
+test('familles du rejeu : programmes courants et scripts du dépôt, sans nom libre', () => {
+  for (const prefix of ['', 'rtk ', 'rtk proxy ']) {
+    for (const program of addedFamilies) {
+      for (const spelling of [program, `"${program}"`, `'${program}'`]) {
+        assert.equal(commandFamily(`${prefix}${spelling} PRIVATE_ARGUMENT PRIVATE_NAME`), prefix + program);
+      }
+    }
+    for (const script of ['scripts/PRIVATE_NAME.sh', './scripts/PRIVATE_NAME.sh', '"./scripts/PRIVATE NAME.sh"', "'scripts/PRIVATE NAME.sh'", String.raw`./scripts/PRIVATE\ NAME.sh`]) {
+      assert.equal(commandFamily(`${prefix}${script} PRIVATE_ARGUMENT`), prefix + 'script du dépôt');
+    }
+  }
+  assert.equal(commandFamily('docker exec PRIVATE_CONTAINER PRIVATE_COMMAND'), 'docker exec');
+  assert.equal(commandFamily('sleep 1 && PRIVATE_PROGRAM PRIVATE_ARGUMENT'), 'sleep');
+  assert.equal(commandFamily('sleep;PRIVATE_PROGRAM'), 'sleep');
+  for (const program of ['scripts-other/PRIVATE_NAME', './scripts-other/PRIVATE_NAME', '/PRIVATE_ROOT/scripts/PRIVATE_NAME', 'PRIVATE_PROGRAM', '"$PRIVATE_PROGRAM"', '"unterminated']) {
+    assert.equal(commandFamily(program + ' PRIVATE_ARGUMENT'), 'autre');
+  }
+});
+
+test('JSONL : les familles nommées conservent les verdicts et ne divulguent aucun argument ou nom de script', async t => {
+  const root = temporary(t);
+  put(root, PROJECT_FILES.policy, { version: 1, entries: [
+    entry({ pattern: ['./scripts/PRIVATE_ALLOW.sh'], decision: 'allow', riskClass: 'local-reversible', match: ['./scripts/PRIVATE_ALLOW.sh'], notMatch: ['./scripts/other.sh'] }),
+    entry({ pattern: ['scripts/PRIVATE_PROMPT.sh'], match: ['scripts/PRIVATE_PROMPT.sh'], notMatch: ['scripts/other.sh'] }),
+  ] });
+  const commands = [
+    ...addedFamilies.map(program => `${program} PRIVATE_ARGUMENT`),
+    './scripts/PRIVATE_ALLOW.sh PRIVATE_VALUE', 'scripts/PRIVATE_PROMPT.sh PRIVATE_VALUE',
+    '"./scripts/PRIVATE UNKNOWN.sh" PRIVATE_VALUE',
+  ];
+  put(root, 'history/session.jsonl', jsonl(commands.flatMap((command, i) => [claude(`claude-${i}`, command), codex(`codex-${i}`, 'exec_command', { cmd: command })])));
+  const result = await replayHistory(path.join(root, 'history'), root);
+  for (const [engine, stats] of Object.entries(result.engines)) {
+    assert.equal(stats.total, commands.length);
+    const summed = family => Object.values(stats.families).reduce((sum, counts) => sum + (counts.get(family) ?? 0), 0);
+    for (const program of addedFamilies) assert.equal(summed(program), 1, `${engine} ${program}`);
+    assert.equal(summed('autre'), 0);
+    assert.equal(summed('script du dépôt'), 3);
+    for (const decision of ['allow', 'prompt', 'aucune']) assert.equal(stats.families[decision].get('script du dépôt'), 1);
+    // Nommer une famille n'autorise aucun programme supplémentaire.
+    assert.equal(stats.families.aucune.get('sleep'), 1);
+    assert.equal(stats.families.forbidden.get('curl'), 1);
+  }
+  const output = renderReplay(result);
+  assert.match(output, /script du dépôt \[…\]/u);
+  assert.doesNotMatch(output, /PRIVATE|UNKNOWN|\.sh|scripts\//u);
+  const cliResult = cli(root, ['replay', path.join(root, 'history')]);
+  assert.equal(cliResult.status, 0, cliResult.stderr);
+  assert.equal(cliResult.stdout, output + '\n');
+  assert.doesNotMatch(cliResult.stdout + cliResult.stderr, /PRIVATE|UNKNOWN|\.sh|scripts\//u);
+});

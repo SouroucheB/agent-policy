@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  GIT_C_READS, GIT_C_MUTATIONS, UNIQ_FORMS, gitCMutationPatterns, generatePermissions, generateCodex,
+  GIT_C_COMMANDS, GIT_C_MUTATIONS, UNIQ_FORMS, gitCMutationPatterns, generatePermissions, generateCodex,
   compileClaudePermission, decisionFor, validatePolicy, validateExamples,
 } from '../lib/generate.mjs';
 import { readCore } from '../lib/system.mjs';
@@ -36,15 +36,15 @@ test('gardes : chemins contenant des sous-chaînes d’options sans faux refus, 
   }
 });
 
-test('gardes ambiguës : comparaison awk, préfixes --pre et --output, noms relatifs en prompt', () => {
+test('gardes ambiguës : comparaison awk, préfixe --pre, noms relatifs en prompt', () => {
   for (const prefix of prefixes) for (const command of [
     "awk '$3 > 5 {print $1}' file", 'rg --pre-glob=*.txt needle src',
-    'git diff --output-indicator-new=X', 'touch docs/name..backup',
+    'touch docs/name..backup',
   ]) assert.equal(verdict(prefix + command), 'prompt', prefix + command);
 });
 
-test('git -C : toutes les lectures et tous les mutants à suffixe de lecture sont testés', () => {
-  for (const prefix of prefixes) for (const read of GIT_C_READS) {
+test('git -C : toutes les formes autorisées et tous les mutants à suffixe autorisé sont testés', () => {
+  for (const prefix of prefixes) for (const read of GIT_C_COMMANDS) {
     for (const suffix of ['', ' --verbose']) assert.equal(verdict(`${prefix}git -C /worktree ${read}${suffix}`), 'allow', `${prefix}git -C /worktree ${read}${suffix}`);
     for (const mutation of GIT_C_MUTATIONS) {
       const command = `${prefix}git -C /x ${mutation} origin ${read}`;
@@ -61,7 +61,7 @@ test('git -C : toutes les lectures et tous les mutants à suffixe de lecture son
     'git -C /x -c name=value status', 'git -C /x diff --output=report',
     'git -C /x grep -Oprogram needle', 'git -C /x grep needle --open-files-in-pager=program',
   ]) assert.ok(['prompt', 'forbidden'].includes(verdict(prefix + command)), prefix + command);
-  assert.equal(verdict('git -C /x reflog'), undefined);
+  assert.equal(verdict('git -C /x reflog'), 'prompt');
   assert.equal(decisionFor(core, 'git -C /x status', 'codex'), undefined);
 });
 

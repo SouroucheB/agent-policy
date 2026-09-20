@@ -1,6 +1,6 @@
 {
   "ref": "main",
-  "commit": "8041307aa6d8c8376ee733decf1ec379274132eb",
+  "commit": "346abb309b0e943159d9fb73a8535105da1871b0",
   "allow": [
     [
       "cut"
@@ -84,6 +84,38 @@
     ],
     [
       "git",
+      "diff"
+    ],
+    [
+      "git",
+      "grep"
+    ],
+    [
+      "git",
+      "log"
+    ],
+    [
+      "git",
+      "ls-files"
+    ],
+    [
+      "git",
+      "merge-tree"
+    ],
+    [
+      "git",
+      "rev-parse"
+    ],
+    [
+      "git",
+      "show"
+    ],
+    [
+      "git",
+      "status"
+    ],
+    [
+      "git",
       "switch",
       "-c"
     ],
@@ -91,6 +123,11 @@
       "git",
       "worktree",
       "add"
+    ],
+    [
+      "git",
+      "worktree",
+      "list"
     ],
     [
       "grep"
@@ -246,6 +283,46 @@
     [
       "rtk",
       "git",
+      "diff"
+    ],
+    [
+      "rtk",
+      "git",
+      "grep"
+    ],
+    [
+      "rtk",
+      "git",
+      "log"
+    ],
+    [
+      "rtk",
+      "git",
+      "ls-files"
+    ],
+    [
+      "rtk",
+      "git",
+      "merge-tree"
+    ],
+    [
+      "rtk",
+      "git",
+      "rev-parse"
+    ],
+    [
+      "rtk",
+      "git",
+      "show"
+    ],
+    [
+      "rtk",
+      "git",
+      "status"
+    ],
+    [
+      "rtk",
+      "git",
       "switch",
       "-c"
     ],
@@ -254,6 +331,12 @@
       "git",
       "worktree",
       "add"
+    ],
+    [
+      "rtk",
+      "git",
+      "worktree",
+      "list"
     ],
     [
       "rtk",
@@ -438,6 +521,54 @@
       "rtk",
       "proxy",
       "git",
+      "diff"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "grep"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "log"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "ls-files"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "merge-tree"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "rev-parse"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "show"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "status"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
       "switch",
       "-c"
     ],
@@ -447,6 +578,13 @@
       "git",
       "worktree",
       "add"
+    ],
+    [
+      "rtk",
+      "proxy",
+      "git",
+      "worktree",
+      "list"
     ],
     [
       "rtk",
