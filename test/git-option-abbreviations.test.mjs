@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 import {
-  GIT_OPTION_PREFIXES, GIT_C_COMMANDS, optionGuardPatterns,
-  generatePermissions, compileClaudePermission, decisionFor, assertClaudeAllowPatterns,
+  GIT_OPTION_PREFIXES, optionGuardPatterns,
+  generatePermissions, compileClaudePermission, decisionFor,
 } from '../lib/generate.mjs';
 import { readCore } from '../lib/system.mjs';
 
@@ -49,16 +49,16 @@ test('inventaire : toutes les options longues Git gardées sont traitées par la
   }
 });
 
-test('toutes les abréviations gardées demandent accord ; les formes complètes gardent leur décision', () => {
+test('abréviations Git sans -C : gardes conservées ; avec -C : aucune règle', () => {
   for (const row of GIT_OPTION_PREFIXES.filter(row => row.prefix)) {
     for (const command of row.commands) for (const mirror of mirrors) for (const middle of ['', '-C /x ']) {
-      const fullDecision = middle || row.optionSet === 'branch' || command === 'fetch' ? 'prompt' : 'forbidden';
-      if (!middle || GIT_C_COMMANDS.includes(command)) {
+      const fullDecision = row.optionSet === 'branch' || command === 'fetch' ? 'prompt' : 'forbidden';
+      if (!middle) {
         assert.equal(verdict(`${mirror}git ${middle}${command} docs/name${row.prefix}.md`), 'allow');
       }
       for (let length = row.prefix.length; length <= row.option.length; length += 1) {
         const abbreviation = row.option.slice(0, length);
-        const expected = abbreviation === row.option ? fullDecision : 'prompt';
+        const expected = middle ? undefined : abbreviation === row.option ? fullDecision : 'prompt';
         for (const before of ['', 'argument ']) for (const after of ['', '=program', ' program']) {
           const text = `${mirror}git ${middle}${command} ${before}${abbreviation}${after}`;
           assert.equal(verdict(text), expected, text);
@@ -68,14 +68,14 @@ test('toutes les abréviations gardées demandent accord ; les formes complètes
   }
 });
 
-test('les cinq exemples signalés sont prompt avec et sans -C, et sous RTK', () => {
+test('les cinq exemples signalés sont prompt sans -C, sans règle avec -C, miroirs compris', () => {
   for (const mirror of mirrors) for (const middle of ['', '-C /x ']) for (const suffix of [
     'fetch --upl=/tmp/evil /tmp/repo', 'grep --op=vim TODO',
     'diff --ext', 'log --ext -p', 'show --ext',
   ]) {
     const text = `${mirror}git ${middle}${suffix}`;
-    assert.equal(verdict(text), 'prompt', text);
-    assert.equal(decisionFor(core, text, 'claude'), 'prompt');
+    assert.equal(verdict(text), middle ? undefined : 'prompt', text);
+    assert.equal(decisionFor(core, text, 'claude'), middle ? undefined : 'prompt');
   }
 });
 
@@ -89,7 +89,7 @@ test('les options voisines légitimes restent allow, même après des arguments 
       ['show', ['--exit-code', '--output-indicator-new=X']],
     ]) for (const option of options) {
       const text = `${mirror}git ${middle}${command} ${before}${option}`;
-      assert.equal(verdict(text), 'allow', text);
+      assert.equal(verdict(text), middle ? undefined : 'allow', text);
     }
   }
   for (const mirror of mirrors) for (const option of ['--format=format', '--column', '--contains', '--merged', '--sort=refname']) {
@@ -102,17 +102,17 @@ test('--output est borné : aucun indicateur capturé, aucune décision complèt
     assert.equal(permissions[key].some(permission => / --output\*\)$/u.test(permission)), false);
   }
   for (const mirror of mirrors) for (const middle of ['', '-C /x ']) for (const before of ['', 'argument ']) {
-    for (const [command, expected] of [['diff', middle ? 'prompt' : 'forbidden'], ['fetch', 'prompt'], ['commit', 'prompt']]) {
+    for (const [command, expected] of [['diff', 'forbidden'], ['fetch', 'prompt'], ['commit', 'prompt']]) {
       for (const suffix of ['', '=/tmp/x', ' /tmp/x']) {
         const text = `${mirror}git ${middle}${command} ${before}--output${suffix}`;
-        assert.equal(verdict(text), expected, text);
+        assert.equal(verdict(text), middle ? undefined : expected, text);
       }
-      assert.equal(verdict(`${mirror}git ${middle}${command} ${before}--output-indicator-new=X`), 'allow');
+      assert.equal(verdict(`${mirror}git ${middle}${command} ${before}--output-indicator-new=X`), middle ? undefined : 'allow');
     }
   }
 });
 
-test('une garde d’abréviation ne peut manquer ni devenir deny, y compris sur un seul miroir', () => {
+test('une garde d’abréviation Git sans -C ne peut manquer ni devenir deny', () => {
   for (const row of GIT_OPTION_PREFIXES.filter(row => row.prefix)) for (const command of row.commands) {
     const original = core.entries.find(entry => entry.pattern?.join(' ') === `git ${command}` && entry.engines?.includes('claude') !== false);
     for (const pattern of optionGuardPatterns(`git ${command}`, row.prefix)) {
@@ -126,21 +126,13 @@ test('une garde d’abréviation ne peut manquer ni devenir deny, y compris sur 
       (entry.claudeDeny ??= []).push(guard);
       assert.throws(() => generatePermissions(mutant), /jamais deny/, pattern);
     }
-    if (!GIT_C_COMMANDS.includes(command)) continue;
-    for (const mirror of mirrors) for (const pattern of optionGuardPatterns(`${mirror}git -C * ${command}`, row.prefix)) {
-      const rule = `Bash(${pattern})`;
-      const mutant = { ...permissions, ask: permissions.ask.filter(permission => permission !== rule) };
-      assert.throws(() => assertClaudeAllowPatterns(mutant), /garde ask obligatoire/, rule);
-      mutant.deny = [...permissions.deny, rule];
-      assert.throws(() => assertClaudeAllowPatterns(mutant), /garde ask obligatoire/, rule);
-    }
   }
 });
 
 test('éditeur/signature de confiance : --edit et --gpg-sign ne reçoivent aucune nouvelle garde', () => {
   for (const mirror of mirrors) for (const middle of ['', '-C /x ']) {
     for (const [command, option] of [['add', '--edit'], ['commit', '--edit'], ['commit', '--gpg-sign=key']]) {
-      assert.equal(verdict(`${mirror}git ${middle}${command} ${option}`), 'allow');
+      assert.equal(verdict(`${mirror}git ${middle}${command} ${option}`), middle ? undefined : 'allow');
     }
   }
 });

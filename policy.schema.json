@@ -136,10 +136,24 @@
           "type": "string",
           "minLength": 1,
           "pattern": "^[A-Za-z0-9_ *\\-]+$",
-          "description": "Motif Claude seul : formes exactes uniq ou exception git -C avec gardes ask obligatoires. Aucun équivalent Codex élargi."
+          "description": "Motif Claude seul : allow limité aux formes exactes uniq, sans joker interne ni exception git -C. Aucun équivalent Codex élargi."
         }
       },
       "allOf": [
+        {
+          "description": "Aucun joker interne dans un allow Claude ; claudePattern allow est limité aux formes exactes uniq.",
+          "oneOf": [
+            { "properties": { "decision": { "enum": ["prompt", "forbidden"] } } },
+            {
+              "properties": {
+                "decision": { "const": "allow" },
+                "claudePattern": {
+                  "pattern": "^(?:rtk (?:proxy )?)*(?:uniq|uniq -c|uniq -d|uniq -u|uniq -i|uniq -c -i|uniq -i -c|uniq -d -i|uniq -i -d|uniq -u -i|uniq -i -u|uniq -cd|uniq -ci|uniq -di|uniq -ui)$"
+                }
+              }
+            }
+          ]
+        },
         {
           "description": "Compatibilité du contrat consommateur : allow exige une classe de lecture/effet réversible ; prompt et forbidden exigent une classe de refus.",
           "oneOf": [
