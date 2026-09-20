@@ -36,10 +36,10 @@ test('gardes : chemins contenant des sous-chaînes d’options sans faux refus, 
   }
 });
 
-test('gardes ambiguës : comparaison awk, préfixes --pre et --output, noms relatifs en prompt', () => {
+test('gardes ambiguës : comparaison awk, préfixe --pre, noms relatifs en prompt', () => {
   for (const prefix of prefixes) for (const command of [
     "awk '$3 > 5 {print $1}' file", 'rg --pre-glob=*.txt needle src',
-    'git diff --output-indicator-new=X', 'touch docs/name..backup',
+    'touch docs/name..backup',
   ]) assert.equal(verdict(prefix + command), 'prompt', prefix + command);
 });
 

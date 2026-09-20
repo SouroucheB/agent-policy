@@ -28,24 +28,6 @@
       "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement.",
       "claudeAsk": [
         {
-          "pattern": "git add --output*",
-          "match": [
-            "git add --output=value"
-          ],
-          "notMatch": [
-            "git add docs/name--output.txt"
-          ]
-        },
-        {
-          "pattern": "git add * --output*",
-          "match": [
-            "git add argument --output=value"
-          ],
-          "notMatch": [
-            "git add docs/name--output.txt"
-          ]
-        },
-        {
           "pattern": "git add --ext-diff*",
           "match": [
             "git add --ext-diff=value"
@@ -134,6 +116,60 @@
           "notMatch": [
             "git add docs/name--config-env.txt"
           ]
+        },
+        {
+          "pattern": "git add --output",
+          "match": [
+            "git add --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git add --output=*",
+          "match": [
+            "git add --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git add --output *",
+          "match": [
+            "git add --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git add * --output",
+          "match": [
+            "git add argument --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git add * --output=*",
+          "match": [
+            "git add argument --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git add * --output *",
+          "match": [
+            "git add argument --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
         }
       ]
     },
@@ -154,24 +190,6 @@
       ],
       "residualRisk": "Les hooks, le pager, les filtres et la configuration Git existants sont supposés de confiance ; leur configuration préalable ne fait pas partie des autorisations du socle. --edit lance l’éditeur configuré ; --gpg-sign de git commit lance le programme de signature configuré. Ces outils sont préconfigurés par le user, au même titre que les hooks Git déjà exécutés par commit ; risque accepté explicitement.",
       "claudeAsk": [
-        {
-          "pattern": "git commit --output*",
-          "match": [
-            "git commit --output=value"
-          ],
-          "notMatch": [
-            "git commit docs/name--output.txt"
-          ]
-        },
-        {
-          "pattern": "git commit * --output*",
-          "match": [
-            "git commit argument --output=value"
-          ],
-          "notMatch": [
-            "git commit docs/name--output.txt"
-          ]
-        },
         {
           "pattern": "git commit --ext-diff*",
           "match": [
@@ -260,6 +278,60 @@
           ],
           "notMatch": [
             "git commit docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git commit --output",
+          "match": [
+            "git commit --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git commit --output=*",
+          "match": [
+            "git commit --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git commit --output *",
+          "match": [
+            "git commit --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git commit * --output",
+          "match": [
+            "git commit argument --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git commit * --output=*",
+          "match": [
+            "git commit argument --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git commit * --output *",
+          "match": [
+            "git commit argument --output argument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -597,24 +669,6 @@
       "residualRisk": "Codex : --upload-pack peut exécuter un programme ; cette option libre, y compris sa valeur collée, ne peut pas être filtrée par préfixe. Risque accepté explicitement comme rg --pre et git diff --ext-diff. Claude demande un accord sur --upload-pack et -c, ainsi que sur les autres gardes d’options libres. Les transports, hooks et configuration Git existants sont supposés de confiance ; les objets et références locaux sont modifiés.",
       "claudeAsk": [
         {
-          "pattern": "git fetch --output*",
-          "match": [
-            "git fetch --output=value"
-          ],
-          "notMatch": [
-            "git fetch docs/name--output.txt"
-          ]
-        },
-        {
-          "pattern": "git fetch * --output*",
-          "match": [
-            "git fetch argument --output=value"
-          ],
-          "notMatch": [
-            "git fetch docs/name--output.txt"
-          ]
-        },
-        {
           "pattern": "git fetch --ext-diff*",
           "match": [
             "git fetch --ext-diff=value"
@@ -702,6 +756,78 @@
           ],
           "notMatch": [
             "git fetch docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch --output",
+          "match": [
+            "git fetch --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch --output=*",
+          "match": [
+            "git fetch --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch --output *",
+          "match": [
+            "git fetch --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch * --output",
+          "match": [
+            "git fetch argument --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch * --output=*",
+          "match": [
+            "git fetch argument --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch * --output *",
+          "match": [
+            "git fetch argument --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch --upl*",
+          "match": [
+            "git fetch --uplargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git fetch * --upl*",
+          "match": [
+            "git fetch argument --uplargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -4168,24 +4294,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git status --output*",
-          "match": [
-            "git status --output=value"
-          ],
-          "notMatch": [
-            "git status docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git status * --output*",
-          "match": [
-            "git status argument --output=value"
-          ],
-          "notMatch": [
-            "git status docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git status -c*",
           "match": [
             "git status -c name=value"
@@ -4318,24 +4426,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git diff --output*",
-          "match": [
-            "git diff --output=value"
-          ],
-          "notMatch": [
-            "git diff docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git diff * --output*",
-          "match": [
-            "git diff argument --output=value"
-          ],
-          "notMatch": [
-            "git diff docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git diff -c*",
           "match": [
             "git diff -c name=value"
@@ -4351,6 +4441,24 @@
           ],
           "notMatch": [
             "git diff --stat"
+          ]
+        },
+        {
+          "pattern": "git diff --ext*",
+          "match": [
+            "git diff --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git diff * --ext*",
+          "match": [
+            "git diff argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -4468,24 +4576,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git log --output*",
-          "match": [
-            "git log --output=value"
-          ],
-          "notMatch": [
-            "git log docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git log * --output*",
-          "match": [
-            "git log argument --output=value"
-          ],
-          "notMatch": [
-            "git log docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git log -c*",
           "match": [
             "git log -c name=value"
@@ -4501,6 +4591,24 @@
           ],
           "notMatch": [
             "git log --oneline -8"
+          ]
+        },
+        {
+          "pattern": "git log --ext*",
+          "match": [
+            "git log --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git log * --ext*",
+          "match": [
+            "git log argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -4618,24 +4726,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git show --output*",
-          "match": [
-            "git show --output=value"
-          ],
-          "notMatch": [
-            "git show docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git show * --output*",
-          "match": [
-            "git show argument --output=value"
-          ],
-          "notMatch": [
-            "git show docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git show -c*",
           "match": [
             "git show -c name=value"
@@ -4651,6 +4741,24 @@
           ],
           "notMatch": [
             "git show abc:path"
+          ]
+        },
+        {
+          "pattern": "git show --ext*",
+          "match": [
+            "git show --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git show * --ext*",
+          "match": [
+            "git show argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -4767,24 +4875,6 @@
       ],
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
-        {
-          "pattern": "git rev-parse --output*",
-          "match": [
-            "git rev-parse --output=value"
-          ],
-          "notMatch": [
-            "git rev-parse docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git rev-parse * --output*",
-          "match": [
-            "git rev-parse argument --output=value"
-          ],
-          "notMatch": [
-            "git rev-parse docs/name--outputintegration.txt"
-          ]
-        },
         {
           "pattern": "git rev-parse -c*",
           "match": [
@@ -4954,24 +5044,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git grep --output*",
-          "match": [
-            "git grep --output=value"
-          ],
-          "notMatch": [
-            "git grep docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git grep * --output*",
-          "match": [
-            "git grep argument --output=value"
-          ],
-          "notMatch": [
-            "git grep docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git grep -c*",
           "match": [
             "git grep -c name=value"
@@ -4987,6 +5059,24 @@
           ],
           "notMatch": [
             "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep --op*",
+          "match": [
+            "git grep --opargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git grep * --op*",
+          "match": [
+            "git grep argument --opargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -5103,24 +5193,6 @@
       ],
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
-        {
-          "pattern": "git ls-files --output*",
-          "match": [
-            "git ls-files --output=value"
-          ],
-          "notMatch": [
-            "git ls-files docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git ls-files * --output*",
-          "match": [
-            "git ls-files argument --output=value"
-          ],
-          "notMatch": [
-            "git ls-files docs/name--outputintegration.txt"
-          ]
-        },
         {
           "pattern": "git ls-files -c*",
           "match": [
@@ -5254,24 +5326,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git ls-tree --output*",
-          "match": [
-            "git ls-tree --output=value"
-          ],
-          "notMatch": [
-            "git ls-tree docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git ls-tree * --output*",
-          "match": [
-            "git ls-tree argument --output=value"
-          ],
-          "notMatch": [
-            "git ls-tree docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git ls-tree -c*",
           "match": [
             "git ls-tree -c name=value"
@@ -5404,24 +5458,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git blame --output*",
-          "match": [
-            "git blame --output=value"
-          ],
-          "notMatch": [
-            "git blame docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git blame * --output*",
-          "match": [
-            "git blame argument --output=value"
-          ],
-          "notMatch": [
-            "git blame docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git blame -c*",
           "match": [
             "git blame -c name=value"
@@ -5437,6 +5473,24 @@
           ],
           "notMatch": [
             "git blame README.md"
+          ]
+        },
+        {
+          "pattern": "git blame --ext*",
+          "match": [
+            "git blame --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git blame * --ext*",
+          "match": [
+            "git blame argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -5735,24 +5789,6 @@
           ]
         },
         {
-          "pattern": "git remote -v --output*",
-          "match": [
-            "git remote -v --output=value"
-          ],
-          "notMatch": [
-            "git remote -v docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git remote -v * --output*",
-          "match": [
-            "git remote -v argument --output=value"
-          ],
-          "notMatch": [
-            "git remote -v docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git remote -v -c*",
           "match": [
             "git remote -v -c name=value"
@@ -5886,24 +5922,6 @@
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
         {
-          "pattern": "git stash list --output*",
-          "match": [
-            "git stash list --output=value"
-          ],
-          "notMatch": [
-            "git stash list docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git stash list * --output*",
-          "match": [
-            "git stash list argument --output=value"
-          ],
-          "notMatch": [
-            "git stash list docs/name--outputintegration.txt"
-          ]
-        },
-        {
           "pattern": "git stash list -c*",
           "match": [
             "git stash list -c name=value"
@@ -5919,6 +5937,24 @@
           ],
           "notMatch": [
             "git stash list"
+          ]
+        },
+        {
+          "pattern": "git stash list --ext*",
+          "match": [
+            "git stash list --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git stash list * --ext*",
+          "match": [
+            "git stash list argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]
@@ -6036,24 +6072,6 @@
       ],
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
-        {
-          "pattern": "git tag --list --output*",
-          "match": [
-            "git tag --list --output=value"
-          ],
-          "notMatch": [
-            "git tag --list docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git tag --list * --output*",
-          "match": [
-            "git tag --list argument --output=value"
-          ],
-          "notMatch": [
-            "git tag --list docs/name--outputintegration.txt"
-          ]
-        },
         {
           "pattern": "git tag --list -c*",
           "match": [
@@ -6187,24 +6205,6 @@
       ],
       "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
       "claudeAsk": [
-        {
-          "pattern": "git worktree list --output*",
-          "match": [
-            "git worktree list --output=value"
-          ],
-          "notMatch": [
-            "git worktree list docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git worktree list * --output*",
-          "match": [
-            "git worktree list argument --output=value"
-          ],
-          "notMatch": [
-            "git worktree list docs/name--outputintegration.txt"
-          ]
-        },
         {
           "pattern": "git worktree list -c*",
           "match": [
@@ -6658,21 +6658,147 @@
           ]
         },
         {
-          "pattern": "git branch --output*",
+          "pattern": "git branch --d*",
           "match": [
-            "git branch --output=value"
+            "git branch --dargument"
           ],
           "notMatch": [
-            "git branch docs/name--outputintegration.txt"
+            "git status"
           ]
         },
         {
-          "pattern": "git branch * --output*",
+          "pattern": "git branch * --d*",
           "match": [
-            "git branch argument --output=value"
+            "git branch argument --dargument"
           ],
           "notMatch": [
-            "git branch docs/name--outputintegration.txt"
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --mo*",
+          "match": [
+            "git branch --moargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --mo*",
+          "match": [
+            "git branch argument --moargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --cop*",
+          "match": [
+            "git branch --copargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --cop*",
+          "match": [
+            "git branch argument --copargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --forc*",
+          "match": [
+            "git branch --forcargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --forc*",
+          "match": [
+            "git branch argument --forcargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --cr*",
+          "match": [
+            "git branch --crargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --cr*",
+          "match": [
+            "git branch argument --crargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --e*",
+          "match": [
+            "git branch --eargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --e*",
+          "match": [
+            "git branch argument --eargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --set-upstream-*",
+          "match": [
+            "git branch --set-upstream-argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --set-upstream-*",
+          "match": [
+            "git branch argument --set-upstream-argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch --u*",
+          "match": [
+            "git branch --uargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git branch * --u*",
+          "match": [
+            "git branch argument --uargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ],
@@ -8227,24 +8353,6 @@
         }
       ],
       "claudeAsk": [
-        {
-          "pattern": "git merge-tree --output*",
-          "match": [
-            "git merge-tree --output=value"
-          ],
-          "notMatch": [
-            "git merge-tree docs/name--outputintegration.txt"
-          ]
-        },
-        {
-          "pattern": "git merge-tree * --output*",
-          "match": [
-            "git merge-tree argument --output=value"
-          ],
-          "notMatch": [
-            "git merge-tree docs/name--outputintegration.txt"
-          ]
-        },
         {
           "pattern": "git merge-tree -c*",
           "match": [
@@ -11213,24 +11321,6 @@
           ]
         },
         {
-          "pattern": "git -C --output*",
-          "match": [
-            "git -C --output=value"
-          ],
-          "notMatch": [
-            "git -C /worktree add docs/name--output.txt"
-          ]
-        },
-        {
-          "pattern": "git -C * --output*",
-          "match": [
-            "git -C /worktree commit -m example --output=value"
-          ],
-          "notMatch": [
-            "git -C /worktree add docs/name--output.txt"
-          ]
-        },
-        {
           "pattern": "git -C --ext-diff*",
           "match": [
             "git -C --ext-diff=value"
@@ -11318,6 +11408,150 @@
           ],
           "notMatch": [
             "git -C /worktree add docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git -C --output",
+          "match": [
+            "git -C --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C --output=*",
+          "match": [
+            "git -C --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C --output *",
+          "match": [
+            "git -C --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * --output",
+          "match": [
+            "git -C argument --output"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * --output=*",
+          "match": [
+            "git -C argument --output=argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * --output *",
+          "match": [
+            "git -C argument --output argument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * diff --ext*",
+          "match": [
+            "git -C argument diff --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * diff * --ext*",
+          "match": [
+            "git -C argument diff argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * log --ext*",
+          "match": [
+            "git -C argument log --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * log * --ext*",
+          "match": [
+            "git -C argument log argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * show --ext*",
+          "match": [
+            "git -C argument show --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * show * --ext*",
+          "match": [
+            "git -C argument show argument --extargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * grep --op*",
+          "match": [
+            "git -C argument grep --opargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * grep * --op*",
+          "match": [
+            "git -C argument grep argument --opargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * fetch --upl*",
+          "match": [
+            "git -C argument fetch --uplargument"
+          ],
+          "notMatch": [
+            "git status"
+          ]
+        },
+        {
+          "pattern": "git -C * fetch * --upl*",
+          "match": [
+            "git -C argument fetch argument --uplargument"
+          ],
+          "notMatch": [
+            "git status"
           ]
         }
       ]

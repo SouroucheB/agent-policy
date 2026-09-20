@@ -538,9 +538,9 @@ Ce catalogue est un instantané : une nouvelle sous-commande Git ou une extensio
 ne sont pas couverts par cette protection. Le test compare le catalogue à la capture Git
 et exige les deux gardes pour chaque sous-commande exclue.
 
-Contrôle de volume : le socle produit 3 098 permissions Claude (393 allow, 1 761 ask,
-944 deny), soit 117 024 octets de `settings.json`. Trois builds locaux du socle utilisé
-comme couche de projet ont pris 54, 38 et 37 ms. Le [schéma publié référencé par Claude
+Contrôle de volume : le socle produit 3 176 permissions Claude (393 allow, 1 839 ask,
+944 deny), soit 119 788 octets de `settings.json`. Trois builds locaux du socle utilisé
+comme couche de projet ont pris 36, 35 et 51 ms. Le [schéma publié référencé par Claude
 Code](https://json.schemastore.org/claude-code-settings.json) n’impose pas de `maxItems`
 aux trois listes de permissions ; cela ne garantit pas les performances de toute version
 du client Claude. Aucun install réel n’est nécessaire pour ces mesures.
@@ -600,9 +600,10 @@ motifs `sed -i*`, `sed * -i*`, `sed --in-place*`, `sed * --in-place*` remplacent
 Un chemin contenant `-integration`, `-immutability`, `--pre`, `--output`, `--ext-diff`,
 `--upload-pack` ou `-c` ne suffit plus à déclencher ces gardes. Les miroirs sont dérivés de
 la même source. Pour les lectures protégées par un deny, les vrais `--pre` et `--output`
-(argument séparé ou `=valeur`) sont refusés ;
-les motifs plus larges pouvant attraper `--pre-glob` ou `--output-indicator-new` demandent
-un accord. Les lectures Git directes comme `diff` et `log` gardent leurs deny sur
+(argument séparé ou `=valeur`) sont refusés ; les motifs plus larges pouvant attraper
+`--pre-glob` demandent un accord. `--output-indicator-new`, `--output-indicator-old` et
+`--output-indicator-context` restent allow grâce aux gardes bornées de `--output`.
+Les lectures Git directes comme `diff` et `log` gardent leurs deny sur
 `--ext-diff` et `--upload-pack` ; le pager de `git grep` garde aussi son deny direct.
 Les motifs `-c*` Git, parfois des options de lecture légitimes, sont en ask.
 Après `git -C`, `--exec-path*` et `--config-env*` sont aussi en ask, quelle que soit leur
@@ -612,6 +613,45 @@ et `fetch` directs, sont toutes en ask : `--output`, `--ext-diff`, `--upload-pac
 `--exec-path`, `--config-env`. Elles peuvent rencontrer un argument légitime, par exemple
 un message de commit parlant de `--output=…`. Le générateur exige ces ask pour autoriser les
 motifs `git -C` ; un deny ne peut pas les remplacer.
+
+Git accepte des [abréviations uniques d’options longues](https://git-scm.com/docs/gitcli).
+La table `GIT_OPTION_PREFIXES` de `lib/generate.mjs` fige les préfixes ci-dessous. Les listes
+complètes d’options dont elle dérive sont versionnées dans
+[`test/fixtures/git-long-options.json`](test/fixtures/git-long-options.json), capturées avec
+`git <commande> --git-completion-helper-all` sur Git 2.50.1 (Apple Git-155), le 20 septembre
+2026. Les tests recalculent le plus court préfixe unique depuis ces listes, hors ligne ; le
+générateur ne lance pas Git pour les obtenir. La liste du parseur de diff s’applique aussi à
+log, show, stash list et blame, qui lui transmettent leurs options de diff.
+
+| Commande / portée | Option gardée | Préfixe ajouté en ask | Options voisines ou justification |
+|---|---|---|---|
+| fetch | `--upload-pack` | `--upl*` | `--update-head-ok`, `--update-shallow`, `--unshallow` restent allow. |
+| grep | `--open-files-in-pager` | `--op*` | `--only-matching` et `--or` sont distincts. |
+| diff, log, show, stash list, blame | `--ext-diff` | `--ext*` | `--exit-code` reste allow. |
+| branch | `--delete` | `--d*` | Seule option commençant par d. |
+| branch | `--move` | `--mo*` | Épargne `--merged`. |
+| branch | `--copy` | `--cop*` | Épargne `--color`, `--column`, `--contains`. |
+| branch | `--force` | `--forc*` | Épargne `--format`. |
+| branch | `--create-reflog` | `--cr*` | Distinct des autres options commençant par c. |
+| branch | `--edit-description` | `--e*` | Seule option commençant par e. |
+| branch | `--set-upstream-to` | `--set-upstream-*` | `--set-upstream` est une autre option exacte, obsolète. |
+| branch | `--unset-upstream` | `--u*` | Seule option commençant par u. |
+| Gardes Git de sortie | `--output` | Aucun ; motifs bornés | Tout préfixe plus court que `--output` est ambigu avec les trois `--output-indicator-*`, donc refusé par git ; aucune abréviation n’existe. |
+| Options globales | `--exec-path`, `--config-env` | Aucun ; noms complets conservés | Le parseur global de [git.c](https://github.com/git/git/blob/v2.50.1/git.c) compare les noms complets sans accepter leur abréviation. |
+
+Les préfixes élargis sont **toujours ask, jamais deny**. Les formes complètes conservent leur
+décision : par exemple `git grep --open-files-in-pager=vim` reste refusé, et `git fetch
+--upload-pack=programme` reste soumis à accord. `--output*` est supprimé partout ; seuls
+`--output`, `--output=*`, `--output *` subsistent, en début d’argument comme après d’autres
+arguments, avec la décision complète antérieure. Les gardes suivent les deux miroirs RTK.
+Pour `git -C`, les préfixes abrégés sont ciblés sur la sous-commande concernée ; les formes
+branch et stash restent déjà en ask par le catalogue. Le générateur exige ces gardes en ask
+lorsqu’il valide une garde complète concernée ou l’exception `git -C`.
+
+`--edit` de add/commit et `--gpg-sign` de commit ne sont pas gardés : leurs programmes
+préconfigurés restent de confiance selon l’arbitrage existant. Le correctif d’abréviations
+ne change aucune règle Codex. Les listes d’options sont un instantané à actualiser avec Git ;
+un préfixe textuel peut aussi rencontrer un argument légitime, qui demande alors un accord.
 
 **Une garde susceptible d’attraper un usage légitime est en `prompt` (`claudeAsk`), jamais en
 refus.** Cela vaut notamment pour l’écriture en place de sed, les gardes larges de chemins
