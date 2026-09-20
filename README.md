@@ -505,26 +505,50 @@ Il conserve les assertions `match` / `notMatch` et suit les miroirs ; aucune rè
 inventée pour représenter un motif Claude.
 
 **Exception assumée : `git -C *` suivi d’une commande de la liste fermée** : `status`, `diff`,
-`log`, `show`, `rev-parse`, `branch --list`, `ls-files`, `grep`, `merge-tree`, `worktree list`,
+`log`, `show`, `rev-parse`, `ls-files`, `grep`, `merge-tree`,
 `add`, `commit`, `fetch`. Chaque commande
 possède un motif sans suffixe et un motif acceptant des arguments. Les chemins des worktrees
 ne sont pas énumérés. Aucun allow générique `git -C *` n’est produit.
 
-Un joker peut englober une sous-commande : les gardes `ask` couvrent donc `push`, `pull`,
-`merge`, `rebase`, `reset`, `restore`, `checkout`, `switch`, `stash`,
-`clean`, `rm`, `tag`, les mutations de `branch`, `worktree` et `remote`, `config` et `gc`.
-Les écritures apparentées (`init`, `mv`, `apply`, `cherry-pick`, `revert`, mutations d’objets
-et maintenance) sont également gardées, ainsi que le lancement du pager de `git grep`.
-Le générateur refuse cette exception si une garde obligatoire manque. Les tests injectent
-`git push`, `gh pr merge`, `rm` et chaque mutation devant chaque suffixe autorisé, y compris
-`git -C /x push origin status`, sous RTK aussi : le résultat doit être `prompt` ou `forbidden`.
-Les autres motifs allow avec joker interne restent interdits. La garde `merge` respecte la
-frontière du mot pour ne pas bloquer la lecture `merge-tree`.
+Un joker peut englober une sous-commande : la protection est donc le complément de cette
+liste autorisée dans un **catalogue versionné de 150 sous-commandes Git**. `GIT_SUBCOMMANDS`,
+embarqué dans `lib/generate.mjs`, reprend toute la porcelaine, la plomberie, les commandes
+auxiliaires et les helpers de `git help -a --no-aliases --no-external-commands`, plus `lfs`
+et `svn`. La capture du 20 septembre 2026 avec Git 2.50.1 (Apple Git-155) est conservée dans
+`test/fixtures/git-help-all.txt` ; les rubriques d’interfaces documentaires ne sont pas des
+commandes. Le générateur et sa copie autonome ne lancent jamais `git help` à l’exécution.
+
+Pour chacune des **139 sous-commandes hors liste autorisée**, le socle déclare deux gardes
+`ask` : `git -C * <sous-commande>` et `git -C * <sous-commande> *`. Les miroirs `rtk` et
+`rtk proxy` reprennent ces gardes. Le générateur refuse toute exception dont une garde manque,
+même sur un seul miroir, ou dont une garde passe en deny. Les gardes d’options libres et du
+pager de `git grep` restent présentes. Les tests couvrent chaque mot du catalogue, les six
+contournements `difftool`, `submodule`, `filter-branch`, `lfs`, `svn`, `replace`, et les
+injections `git push`, `gh pr merge`, `rm` devant chaque suffixe autorisé.
+
+Conséquences acceptées de ces gardes textuelles : un message de commit ou un argument
+contenant un mot gardé peut demander un accord. `branch` et `worktree` ne sont pas des
+sous-commandes autorisées en entier : **`git -C … branch --list` et `git -C … worktree list`
+passent donc aussi en prompt**. Les lectures sans `-C` conservent leurs règles. Une sous-chaîne
+ne suffit pas : `merge` ne masque ni `merge-tree` ni un chemin `docs/merge.md`.
+Les autres motifs allow avec joker interne restent interdits.
+
+Ce catalogue est un instantané : une nouvelle sous-commande Git ou une extension autre que
+`lfs`/`svn` nécessite sa mise à jour versionnée ; les alias et exécutables tiers inconnus
+ne sont pas couverts par cette protection. Le test compare le catalogue à la capture Git
+et exige les deux gardes pour chaque sous-commande exclue.
+
+Contrôle de volume : le socle produit 3 098 permissions Claude (393 allow, 1 761 ask,
+944 deny), soit 117 024 octets de `settings.json`. Trois builds locaux du socle utilisé
+comme couche de projet ont pris 54, 38 et 37 ms. Le [schéma publié référencé par Claude
+Code](https://json.schemastore.org/claude-code-settings.json) n’impose pas de `maxItems`
+aux trois listes de permissions ; cela ne garantit pas les performances de toute version
+du client Claude. Aucun install réel n’est nécessaire pour ces mesures.
 
 La parité ajoutée pour `add`, `commit` et `fetch` concerne **Claude seulement** : `git add`
 et `git -C <chemin> add`, par exemple, sont allow et portent les mêmes gardes d’options libres.
-Les gardes génériques `git -C … add`, `commit`, `fetch` sont retirées ; les gardes de
-`worktree add` et `remote add` restent en ask. **Aucune règle Codex pour `git -C`** : un préfixe
+Les gardes génériques `git -C … add`, `commit`, `fetch` sont absentes ; `worktree` et
+`remote` restent entièrement en ask. **Aucune règle Codex pour `git -C`** : un préfixe
 littéral ne peut pas sauter un chemin variable, et autoriser `git -C` entier ouvrirait les
 mutations. Cette limite vaut aussi pour les miroirs RTK.
 

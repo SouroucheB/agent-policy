@@ -61,7 +61,7 @@ test('git -C : toutes les formes autorisées et tous les mutants à suffixe auto
     'git -C /x -c name=value status', 'git -C /x diff --output=report',
     'git -C /x grep -Oprogram needle', 'git -C /x grep needle --open-files-in-pager=program',
   ]) assert.ok(['prompt', 'forbidden'].includes(verdict(prefix + command)), prefix + command);
-  assert.equal(verdict('git -C /x reflog'), undefined);
+  assert.equal(verdict('git -C /x reflog'), 'prompt');
   assert.equal(decisionFor(core, 'git -C /x status', 'codex'), undefined);
 });
 
