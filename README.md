@@ -167,7 +167,7 @@ celui de cette version du plan ; pour un autre plan, calculer son empreinte avec
   "branch": "feat/agent-policy-brief",
   "plan": {
     "path": "docs/plans/2026-09-20-001-agent-policy-plan.md",
-    "sha256": "ce215f1e7b4194f57b14fcc8c0de0169312bde898ab32f52a3c9e46fee977ac7",
+    "sha256": "09662a48af27eb469a65dc3dd52b916052fb9cd9da80bc7af6f9ba2099187505",
     "itemSection": "## 5. Plan",
     "dodSection": "## 6. DoD"
   },

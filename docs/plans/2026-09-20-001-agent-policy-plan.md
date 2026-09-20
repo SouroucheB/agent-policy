@@ -104,6 +104,10 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
 7. **Prompt de délégation produit par une commande commune** — commande `agent-policy brief` :
    l'orchestrateur remplit un brief structuré, la commande rend l'en-tête et le bloc à copier au
    format validé le 2026-09-20 ; une phrase dans `AGENTS.md` la rend obligatoire. (DoD 9)
+8. **Frontière d'écriture commune** — init dépose dans chaque dépôt un garde-fou qui refuse à
+   Claude toute écriture hors du worktree actif, et le déclare dans .claude/settings.json ; repris
+   de CoproOS scripts/claude-worktree-write-guard.cjs et de ses tests. Codex n'en reçoit pas : son
+   sandbox workspace-write pose déjà cette frontière. (DoD 10)
 
 ### Format de délégation visé par l'item 7
 
@@ -143,6 +147,9 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
    l'équivalent Codex.
 9. Un prompt de délégation a la même forme quel que soit l'orchestrateur, et reprend l'item et la
    DoD du plan à l'identique ; une reformulation fait échouer la commande.
+10. Dans un dépôt initialisé, Claude ne peut créer, modifier ni supprimer aucun fichier hors de son
+    worktree, et le README documente la limite connue : une commande autorisée côté Codex
+    s'exécute hors sandbox.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 
