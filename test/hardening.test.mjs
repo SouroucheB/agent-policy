@@ -43,7 +43,7 @@ test('limites Codex : garde seule sans préfixe ni autorisation fictive', () => 
     assert.equal(decisionFor(core, command), undefined, command);
     assert.equal(protectedBy(generatePermissions(core), command), true, command);
   }
-  for (const rule of core.entries.filter(value => value.pattern === undefined)) {
+  for (const rule of core.entries.filter(value => value.pattern === undefined && !value.claudePattern)) {
     assert.equal(rule.decision, 'forbidden');
     assert.ok(rule.residualRisk.length > 0);
     assert.throws(() => validatePolicy(policy([{ ...rule, decision: 'allow' }])));

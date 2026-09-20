@@ -294,7 +294,7 @@
         "npm audit-extra"
       ],
       "residualRisk": "Le préfixe accepte des options avant fix : npm audit --json fix ne rencontre pas le sous-préfixe npm audit fix. Employer la forme canonique. L’audit envoie des métadonnées au registre npm, sans publier le dépôt.",
-      "claudeDeny": [
+      "claudeAsk": [
         {
           "pattern": "npm audit * fix*",
           "match": [
@@ -372,14 +372,21 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git fetch *--upload-pack*",
+          "pattern": "git fetch --upload-pack*",
           "match": [
-            "git fetch --upload-pack=custom-command origin",
-            "git fetch origin --upload-pack=custom-command"
+            "git fetch --upload-pack=value"
           ],
           "notMatch": [
-            "git fetch origin",
-            "git fetch --prune origin"
+            "git fetch docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git fetch * --upload-pack*",
+          "match": [
+            "git fetch argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git fetch docs/name--upload-packintegration.txt"
           ]
         }
       ]
@@ -1838,14 +1845,21 @@
       "residualRisk": "Codex ne peut pas reconnaître -delete après un chemin ou des options en position libre ; seule la forme find -delete est couverte par le préfixe. La garde Claude couvre les positions libres.",
       "claudeDeny": [
         {
-          "pattern": "find *-delete*",
+          "pattern": "find -delete*",
           "match": [
-            "find . -delete target",
-            "find -delete target"
+            "find -deletevalue"
           ],
           "notMatch": [
-            "find . -print",
-            "find . -name example"
+            "find docs/name-deleteintegration.txt"
+          ]
+        },
+        {
+          "pattern": "find * -delete*",
+          "match": [
+            "find argument -deletevalue"
+          ],
+          "notMatch": [
+            "find docs/name-deleteintegration.txt"
           ]
         }
       ]
@@ -1868,14 +1882,21 @@
       "residualRisk": "Codex ne peut pas reconnaître -exec après un chemin ou des options en position libre ; seule la forme find -exec est couverte par le préfixe. La garde Claude couvre les positions libres.",
       "claudeDeny": [
         {
-          "pattern": "find *-exec*",
+          "pattern": "find -exec*",
           "match": [
-            "find . -exec target",
-            "find -exec target"
+            "find -execvalue"
           ],
           "notMatch": [
-            "find . -print",
-            "find . -name example"
+            "find docs/name-execintegration.txt"
+          ]
+        },
+        {
+          "pattern": "find * -exec*",
+          "match": [
+            "find argument -execvalue"
+          ],
+          "notMatch": [
+            "find docs/name-execintegration.txt"
           ]
         }
       ]
@@ -2307,32 +2328,146 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "rtk grep *.env*",
+          "pattern": "rtk grep --pre",
           "match": [
-            "rtk grep .env",
-            "rtk grep src/.env.local",
-            "rtk grep -- \"config/.env.production\""
+            "rtk grep --pre"
           ],
           "notMatch": [
-            "rtk grep README.md",
-            "rtk grep src/main.mjs"
+            "rtk grep docs/name--pre.txt"
           ]
         },
         {
-          "pattern": "rtk grep *--pre*",
+          "pattern": "rtk grep --pre *",
           "match": [
-            "rtk grep --pre custom-command needle",
-            "rtk grep needle --pre=custom-command"
+            "rtk grep --pre program"
           ],
           "notMatch": [
-            "rtk grep needle src",
-            "rtk grep --files"
+            "rtk grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep --pre=*",
+          "match": [
+            "rtk grep --pre=program"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * --pre",
+          "match": [
+            "rtk grep argument --pre"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * --pre *",
+          "match": [
+            "rtk grep argument --pre program"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * --pre=*",
+          "match": [
+            "rtk grep argument --pre=program"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--pre.txt"
           ]
         }
       ],
-      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; aucune autorisation Codex hors sandbox. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible.",
+      "residualRisk": "RTK et ses filtres/configurations sont supposés de confiance. Lecture réservée à Claude ; entrée sans règle Codex propre ; le miroir du filtre grep Codex fournit toutefois un allow séparé. Les gardes textuelles ne résolvent pas les liens, expansions ni parcours implicites. Les statistiques RTK peuvent écrire leur état local réversible. Les gardes .env peuvent désigner un motif de recherche légitime : elles demandent un accord, sans refus.",
       "engines": [
         "claude"
+      ],
+      "claudeAsk": [
+        {
+          "pattern": "rtk grep --pre*",
+          "match": [
+            "rtk grep --pre=value"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * --pre*",
+          "match": [
+            "rtk grep argument --pre=value"
+          ],
+          "notMatch": [
+            "rtk grep docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep .env*",
+          "match": [
+            "rtk grep .env"
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * .env*",
+          "match": [
+            "rtk grep argument .env.local"
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep \".env*",
+          "match": [
+            "rtk grep \".env\""
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * \".env*",
+          "match": [
+            "rtk grep argument \".env.local\""
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep '.env*",
+          "match": [
+            "rtk grep '.env'"
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep * '.env*",
+          "match": [
+            "rtk grep argument '.env.local'"
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk grep */.env*",
+          "match": [
+            "rtk grep config/.env.local"
+          ],
+          "notMatch": [
+            "rtk grep docs/report.env.integration.txt"
+          ]
+        }
       ]
     },
     {
@@ -2351,15 +2486,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "rtk read *.env*",
+          "pattern": "rtk read .env*",
           "match": [
-            "rtk read .env",
-            "rtk read src/.env.local",
-            "rtk read -- \"config/.env.production\""
+            "rtk read .env"
           ],
           "notMatch": [
-            "rtk read README.md",
-            "rtk read src/main.mjs"
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read * .env*",
+          "match": [
+            "rtk read argument .env.local"
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read \".env*",
+          "match": [
+            "rtk read \".env\""
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read * \".env*",
+          "match": [
+            "rtk read argument \".env.local\""
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read '.env*",
+          "match": [
+            "rtk read '.env'"
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read * '.env*",
+          "match": [
+            "rtk read argument '.env.local'"
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk read */.env*",
+          "match": [
+            "rtk read config/.env.local"
+          ],
+          "notMatch": [
+            "rtk read docs/report.env.integration.txt"
           ]
         }
       ],
@@ -2403,15 +2589,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "rtk diff *.env*",
+          "pattern": "rtk diff .env*",
           "match": [
-            "rtk diff .env",
-            "rtk diff src/.env.local",
-            "rtk diff -- \"config/.env.production\""
+            "rtk diff .env"
           ],
           "notMatch": [
-            "rtk diff README.md",
-            "rtk diff src/main.mjs"
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff * .env*",
+          "match": [
+            "rtk diff argument .env.local"
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff \".env*",
+          "match": [
+            "rtk diff \".env\""
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff * \".env*",
+          "match": [
+            "rtk diff argument \".env.local\""
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff '.env*",
+          "match": [
+            "rtk diff '.env'"
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff * '.env*",
+          "match": [
+            "rtk diff argument '.env.local'"
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rtk diff */.env*",
+          "match": [
+            "rtk diff config/.env.local"
+          ],
+          "notMatch": [
+            "rtk diff docs/report.env.integration.txt"
           ]
         }
       ],
@@ -2532,15 +2769,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "cat *.env*",
+          "pattern": "cat .env*",
           "match": [
-            "cat .env",
-            "cat src/.env.local",
-            "cat -- \"config/.env.production\""
+            "cat .env"
           ],
           "notMatch": [
-            "cat README.md",
-            "cat src/main.mjs"
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat * .env*",
+          "match": [
+            "cat argument .env.local"
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat \".env*",
+          "match": [
+            "cat \".env\""
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat * \".env*",
+          "match": [
+            "cat argument \".env.local\""
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat '.env*",
+          "match": [
+            "cat '.env'"
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat * '.env*",
+          "match": [
+            "cat argument '.env.local'"
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cat */.env*",
+          "match": [
+            "cat config/.env.local"
+          ],
+          "notMatch": [
+            "cat docs/report.env.integration.txt"
           ]
         }
       ],
@@ -2564,15 +2852,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "head *.env*",
+          "pattern": "head .env*",
           "match": [
-            "head .env",
-            "head src/.env.local",
-            "head -- \"config/.env.production\""
+            "head .env"
           ],
           "notMatch": [
-            "head README.md",
-            "head src/main.mjs"
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head * .env*",
+          "match": [
+            "head argument .env.local"
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head \".env*",
+          "match": [
+            "head \".env\""
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head * \".env*",
+          "match": [
+            "head argument \".env.local\""
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head '.env*",
+          "match": [
+            "head '.env'"
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head * '.env*",
+          "match": [
+            "head argument '.env.local'"
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "head */.env*",
+          "match": [
+            "head config/.env.local"
+          ],
+          "notMatch": [
+            "head docs/report.env.integration.txt"
           ]
         }
       ],
@@ -2596,15 +2935,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "tail *.env*",
+          "pattern": "tail .env*",
           "match": [
-            "tail .env",
-            "tail src/.env.local",
-            "tail -- \"config/.env.production\""
+            "tail .env"
           ],
           "notMatch": [
-            "tail README.md",
-            "tail src/main.mjs"
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail * .env*",
+          "match": [
+            "tail argument .env.local"
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail \".env*",
+          "match": [
+            "tail \".env\""
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail * \".env*",
+          "match": [
+            "tail argument \".env.local\""
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail '.env*",
+          "match": [
+            "tail '.env'"
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail * '.env*",
+          "match": [
+            "tail argument '.env.local'"
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "tail */.env*",
+          "match": [
+            "tail config/.env.local"
+          ],
+          "notMatch": [
+            "tail docs/report.env.integration.txt"
           ]
         }
       ],
@@ -2628,30 +3018,144 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "grep *.env*",
+          "pattern": "grep --pre",
           "match": [
-            "grep .env",
-            "grep src/.env.local",
-            "grep -- \"config/.env.production\""
+            "grep --pre"
           ],
           "notMatch": [
-            "grep README.md",
-            "grep src/main.mjs"
+            "grep docs/name--pre.txt"
           ]
         },
         {
-          "pattern": "grep *--pre*",
+          "pattern": "grep --pre *",
           "match": [
-            "grep --pre custom-command needle",
-            "grep needle --pre=custom-command"
+            "grep --pre program"
           ],
           "notMatch": [
-            "grep needle src",
-            "grep --files"
+            "grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "grep --pre=*",
+          "match": [
+            "grep --pre=program"
+          ],
+          "notMatch": [
+            "grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "grep * --pre",
+          "match": [
+            "grep argument --pre"
+          ],
+          "notMatch": [
+            "grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "grep * --pre *",
+          "match": [
+            "grep argument --pre program"
+          ],
+          "notMatch": [
+            "grep docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "grep * --pre=*",
+          "match": [
+            "grep argument --pre=program"
+          ],
+          "notMatch": [
+            "grep docs/name--pre.txt"
           ]
         }
       ],
-      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. Les gardes .env peuvent désigner un motif de recherche légitime : elles demandent un accord, sans refus.",
+      "claudeAsk": [
+        {
+          "pattern": "grep --pre*",
+          "match": [
+            "grep --pre=value"
+          ],
+          "notMatch": [
+            "grep docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "grep * --pre*",
+          "match": [
+            "grep argument --pre=value"
+          ],
+          "notMatch": [
+            "grep docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "grep .env*",
+          "match": [
+            "grep .env"
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep * .env*",
+          "match": [
+            "grep argument .env.local"
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep \".env*",
+          "match": [
+            "grep \".env\""
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep * \".env*",
+          "match": [
+            "grep argument \".env.local\""
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep '.env*",
+          "match": [
+            "grep '.env'"
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep * '.env*",
+          "match": [
+            "grep argument '.env.local'"
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "grep */.env*",
+          "match": [
+            "grep config/.env.local"
+          ],
+          "notMatch": [
+            "grep docs/report.env.integration.txt"
+          ]
+        }
+      ]
     },
     {
       "pattern": [
@@ -2707,30 +3211,144 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "rg *.env*",
+          "pattern": "rg --pre",
           "match": [
-            "rg .env",
-            "rg src/.env.local",
-            "rg -- \"config/.env.production\""
+            "rg --pre"
           ],
           "notMatch": [
-            "rg README.md",
-            "rg src/main.mjs"
+            "rg docs/name--pre.txt"
           ]
         },
         {
-          "pattern": "rg *--pre*",
+          "pattern": "rg --pre *",
           "match": [
-            "rg --pre custom-command needle",
-            "rg needle --pre=custom-command"
+            "rg --pre program"
           ],
           "notMatch": [
-            "rg needle src",
-            "rg --files"
+            "rg docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rg --pre=*",
+          "match": [
+            "rg --pre=program"
+          ],
+          "notMatch": [
+            "rg docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rg * --pre",
+          "match": [
+            "rg argument --pre"
+          ],
+          "notMatch": [
+            "rg docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rg * --pre *",
+          "match": [
+            "rg argument --pre program"
+          ],
+          "notMatch": [
+            "rg docs/name--pre.txt"
+          ]
+        },
+        {
+          "pattern": "rg * --pre=*",
+          "match": [
+            "rg argument --pre=program"
+          ],
+          "notMatch": [
+            "rg docs/name--pre.txt"
           ]
         }
       ],
-      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites."
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. Les gardes .env peuvent désigner un motif de recherche légitime : elles demandent un accord, sans refus.",
+      "claudeAsk": [
+        {
+          "pattern": "rg --pre*",
+          "match": [
+            "rg --pre=value"
+          ],
+          "notMatch": [
+            "rg docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "rg * --pre*",
+          "match": [
+            "rg argument --pre=value"
+          ],
+          "notMatch": [
+            "rg docs/name--preintegration.txt"
+          ]
+        },
+        {
+          "pattern": "rg .env*",
+          "match": [
+            "rg .env"
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg * .env*",
+          "match": [
+            "rg argument .env.local"
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg \".env*",
+          "match": [
+            "rg \".env\""
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg * \".env*",
+          "match": [
+            "rg argument \".env.local\""
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg '.env*",
+          "match": [
+            "rg '.env'"
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg * '.env*",
+          "match": [
+            "rg argument '.env.local'"
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "rg */.env*",
+          "match": [
+            "rg config/.env.local"
+          ],
+          "notMatch": [
+            "rg docs/report.env.integration.txt"
+          ]
+        }
+      ]
     },
     {
       "pattern": [
@@ -2749,39 +3367,108 @@
       "engines": [
         "claude"
       ],
-      "claudeDeny": [
+      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. -n désactive l’impression automatique, pas les instructions e/w d’un programme sed ; les gardes .env et écriture en place ne valident pas ce programme. Les gardes .env peuvent désigner un motif de recherche légitime : elles demandent un accord, sans refus.",
+      "claudeAsk": [
         {
-          "pattern": "sed *.env*",
+          "pattern": "sed -i*",
           "match": [
-            "sed .env",
-            "sed src/.env.local",
-            "sed -- \"config/.env.production\""
+            "sed -ivalue"
           ],
           "notMatch": [
-            "sed README.md",
-            "sed src/main.mjs"
+            "sed docs/name-iintegration.txt"
           ]
         },
         {
-          "pattern": "sed *-i*",
+          "pattern": "sed * -i*",
           "match": [
-            "sed -n -i 's/a/b/' file.txt"
+            "sed argument -ivalue"
           ],
           "notMatch": [
-            "sed -n '1p' file.txt"
+            "sed docs/name-iintegration.txt"
           ]
         },
         {
-          "pattern": "sed *--in-place*",
+          "pattern": "sed --in-place*",
           "match": [
-            "sed -n --in-place 's/a/b/' file.txt"
+            "sed --in-place=value"
           ],
           "notMatch": [
-            "sed -n '1p' file.txt"
+            "sed docs/name--in-placeintegration.txt"
+          ]
+        },
+        {
+          "pattern": "sed * --in-place*",
+          "match": [
+            "sed argument --in-place=value"
+          ],
+          "notMatch": [
+            "sed docs/name--in-placeintegration.txt"
+          ]
+        },
+        {
+          "pattern": "sed .env*",
+          "match": [
+            "sed .env"
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed * .env*",
+          "match": [
+            "sed argument .env.local"
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed \".env*",
+          "match": [
+            "sed \".env\""
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed * \".env*",
+          "match": [
+            "sed argument \".env.local\""
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed '.env*",
+          "match": [
+            "sed '.env'"
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed * '.env*",
+          "match": [
+            "sed argument '.env.local'"
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "sed */.env*",
+          "match": [
+            "sed config/.env.local"
+          ],
+          "notMatch": [
+            "sed docs/report.env.integration.txt"
           ]
         }
-      ],
-      "residualRisk": "Autorisation limitée à Claude ; les redirections shell et les variantes d’options ne sont pas analysées exhaustivement par un préfixe. Les garde-fous de l’agent et la frontière d’écriture restent applicables. Les gardes .env* portent sur le texte de commande : elles ne résolvent pas les liens, expansions, fichiers de motifs ou parcours récursifs implicites. -n désactive l’impression automatique, pas les instructions e/w d’un programme sed ; les gardes .env et écriture en place ne valident pas ce programme."
+      ]
     },
     {
       "pattern": [
@@ -2923,19 +3610,27 @@
       "notMatch": [
         "lsof -D"
       ],
-      "claudeDeny": [
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude demande un accord pour -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés.",
+      "claudeAsk": [
         {
-          "pattern": "lsof *-D*",
+          "pattern": "lsof -D*",
           "match": [
-            "lsof -i -Db/cache",
-            "lsof -D"
+            "lsof -Dvalue"
           ],
           "notMatch": [
-            "lsof -i :3000"
+            "lsof docs/name-Dintegration.txt"
+          ]
+        },
+        {
+          "pattern": "lsof * -D*",
+          "match": [
+            "lsof argument -Dvalue"
+          ],
+          "notMatch": [
+            "lsof docs/name-Dintegration.txt"
           ]
         }
-      ],
-      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+      ]
     },
     {
       "pattern": [
@@ -2951,19 +3646,27 @@
       "notMatch": [
         "lsof -D"
       ],
-      "claudeDeny": [
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude demande un accord pour -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés.",
+      "claudeAsk": [
         {
-          "pattern": "lsof *-D*",
+          "pattern": "lsof -D*",
           "match": [
-            "lsof -ti -Db/cache",
-            "lsof -D"
+            "lsof -Dvalue"
           ],
           "notMatch": [
-            "lsof -ti :3000"
+            "lsof docs/name-Dintegration.txt"
+          ]
+        },
+        {
+          "pattern": "lsof * -D*",
+          "match": [
+            "lsof argument -Dvalue"
+          ],
+          "notMatch": [
+            "lsof docs/name-Dintegration.txt"
           ]
         }
-      ],
-      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+      ]
     },
     {
       "pattern": [
@@ -2979,19 +3682,27 @@
       "notMatch": [
         "lsof -D"
       ],
-      "claudeDeny": [
+      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude demande un accord pour -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés.",
+      "claudeAsk": [
         {
-          "pattern": "lsof *-D*",
+          "pattern": "lsof -D*",
           "match": [
-            "lsof -nP -Db/cache",
-            "lsof -D"
+            "lsof -Dvalue"
           ],
           "notMatch": [
-            "lsof -nP :3000"
+            "lsof docs/name-Dintegration.txt"
+          ]
+        },
+        {
+          "pattern": "lsof * -D*",
+          "match": [
+            "lsof argument -Dvalue"
+          ],
+          "notMatch": [
+            "lsof docs/name-Dintegration.txt"
           ]
         }
-      ],
-      "residualRisk": "Le préfixe autorise les arguments suivants : Codex ne sait pas exclure -D en position libre ni les formes avec valeur collée (-i:3000, -ti:3000). Claude refuse -D par garde ; les formes de lecture autorisées par Codex utilisent des tokens séparés."
+      ]
     },
     {
       "pattern": [
@@ -3007,19 +3718,27 @@
       "notMatch": [
         "lsof -i :3000"
       ],
-      "claudeDeny": [
+      "residualRisk": "Codex ne sait pas exprimer -D avec sous-option ou valeur collée, ni après des options de lecture. La garde Claude couvre ces formes textuelles.",
+      "claudeAsk": [
         {
-          "pattern": "lsof *-D*",
+          "pattern": "lsof -D*",
           "match": [
-            "lsof -D",
-            "lsof -i -Db/cache"
+            "lsof -Dvalue"
           ],
           "notMatch": [
-            "lsof -i :3000"
+            "lsof docs/name-Dintegration.txt"
+          ]
+        },
+        {
+          "pattern": "lsof * -D*",
+          "match": [
+            "lsof argument -Dvalue"
+          ],
+          "notMatch": [
+            "lsof docs/name-Dintegration.txt"
           ]
         }
-      ],
-      "residualRisk": "Codex ne sait pas exprimer -D avec sous-option ou valeur collée, ni après des options de lecture. La garde Claude couvre ces formes textuelles."
+      ]
     },
     {
       "pattern": [
@@ -3041,33 +3760,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git status *--output*",
+          "pattern": "git status --output",
           "match": [
-            "git status --output=value",
-            "git status --short --output=value"
+            "git status --output"
           ],
           "notMatch": [
-            "git status --short"
+            "git status docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git status *--ext-diff*",
+          "pattern": "git status --output *",
           "match": [
-            "git status --ext-diff=value",
-            "git status --short --ext-diff=value"
+            "git status --output program"
           ],
           "notMatch": [
-            "git status --short"
+            "git status docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git status *--upload-pack*",
+          "pattern": "git status --output=*",
           "match": [
-            "git status --upload-pack=value",
-            "git status --short --upload-pack=value"
+            "git status --output=program"
           ],
           "notMatch": [
-            "git status --short"
+            "git status docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --output",
+          "match": [
+            "git status argument --output"
+          ],
+          "notMatch": [
+            "git status docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --output *",
+          "match": [
+            "git status argument --output program"
+          ],
+          "notMatch": [
+            "git status docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --output=*",
+          "match": [
+            "git status argument --output=program"
+          ],
+          "notMatch": [
+            "git status docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git status --ext-diff*",
+          "match": [
+            "git status --ext-diff=value"
+          ],
+          "notMatch": [
+            "git status docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --ext-diff*",
+          "match": [
+            "git status argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git status docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git status --upload-pack*",
+          "match": [
+            "git status --upload-pack=value"
+          ],
+          "notMatch": [
+            "git status docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --upload-pack*",
+          "match": [
+            "git status argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git status docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git status --output*",
+          "match": [
+            "git status --output=value"
+          ],
+          "notMatch": [
+            "git status docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git status * --output*",
+          "match": [
+            "git status argument --output=value"
+          ],
+          "notMatch": [
+            "git status docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3088,8 +3888,7 @@
             "git status --short"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3111,33 +3910,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git diff *--output*",
+          "pattern": "git diff --output",
           "match": [
-            "git diff --output=value",
-            "git diff --stat --output=value"
+            "git diff --output"
           ],
           "notMatch": [
-            "git diff --stat"
+            "git diff docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git diff *--ext-diff*",
+          "pattern": "git diff --output *",
           "match": [
-            "git diff --ext-diff=value",
-            "git diff --stat --ext-diff=value"
+            "git diff --output program"
           ],
           "notMatch": [
-            "git diff --stat"
+            "git diff docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git diff *--upload-pack*",
+          "pattern": "git diff --output=*",
           "match": [
-            "git diff --upload-pack=value",
-            "git diff --stat --upload-pack=value"
+            "git diff --output=program"
           ],
           "notMatch": [
-            "git diff --stat"
+            "git diff docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --output",
+          "match": [
+            "git diff argument --output"
+          ],
+          "notMatch": [
+            "git diff docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --output *",
+          "match": [
+            "git diff argument --output program"
+          ],
+          "notMatch": [
+            "git diff docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --output=*",
+          "match": [
+            "git diff argument --output=program"
+          ],
+          "notMatch": [
+            "git diff docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git diff --ext-diff*",
+          "match": [
+            "git diff --ext-diff=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --ext-diff*",
+          "match": [
+            "git diff argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git diff --upload-pack*",
+          "match": [
+            "git diff --upload-pack=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --upload-pack*",
+          "match": [
+            "git diff argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git diff --output*",
+          "match": [
+            "git diff --output=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git diff * --output*",
+          "match": [
+            "git diff argument --output=value"
+          ],
+          "notMatch": [
+            "git diff docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3158,8 +4038,7 @@
             "git diff --stat"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3181,33 +4060,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git log *--output*",
+          "pattern": "git log --output",
           "match": [
-            "git log --output=value",
-            "git log --oneline -8 --output=value"
+            "git log --output"
           ],
           "notMatch": [
-            "git log --oneline -8"
+            "git log docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git log *--ext-diff*",
+          "pattern": "git log --output *",
           "match": [
-            "git log --ext-diff=value",
-            "git log --oneline -8 --ext-diff=value"
+            "git log --output program"
           ],
           "notMatch": [
-            "git log --oneline -8"
+            "git log docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git log *--upload-pack*",
+          "pattern": "git log --output=*",
           "match": [
-            "git log --upload-pack=value",
-            "git log --oneline -8 --upload-pack=value"
+            "git log --output=program"
           ],
           "notMatch": [
-            "git log --oneline -8"
+            "git log docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --output",
+          "match": [
+            "git log argument --output"
+          ],
+          "notMatch": [
+            "git log docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --output *",
+          "match": [
+            "git log argument --output program"
+          ],
+          "notMatch": [
+            "git log docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --output=*",
+          "match": [
+            "git log argument --output=program"
+          ],
+          "notMatch": [
+            "git log docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git log --ext-diff*",
+          "match": [
+            "git log --ext-diff=value"
+          ],
+          "notMatch": [
+            "git log docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --ext-diff*",
+          "match": [
+            "git log argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git log docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git log --upload-pack*",
+          "match": [
+            "git log --upload-pack=value"
+          ],
+          "notMatch": [
+            "git log docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --upload-pack*",
+          "match": [
+            "git log argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git log docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git log --output*",
+          "match": [
+            "git log --output=value"
+          ],
+          "notMatch": [
+            "git log docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git log * --output*",
+          "match": [
+            "git log argument --output=value"
+          ],
+          "notMatch": [
+            "git log docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3228,8 +4188,7 @@
             "git log --oneline -8"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3251,33 +4210,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git show *--output*",
+          "pattern": "git show --output",
           "match": [
-            "git show --output=value",
-            "git show abc:path --output=value"
+            "git show --output"
           ],
           "notMatch": [
-            "git show abc:path"
+            "git show docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git show *--ext-diff*",
+          "pattern": "git show --output *",
           "match": [
-            "git show --ext-diff=value",
-            "git show abc:path --ext-diff=value"
+            "git show --output program"
           ],
           "notMatch": [
-            "git show abc:path"
+            "git show docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git show *--upload-pack*",
+          "pattern": "git show --output=*",
           "match": [
-            "git show --upload-pack=value",
-            "git show abc:path --upload-pack=value"
+            "git show --output=program"
           ],
           "notMatch": [
-            "git show abc:path"
+            "git show docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --output",
+          "match": [
+            "git show argument --output"
+          ],
+          "notMatch": [
+            "git show docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --output *",
+          "match": [
+            "git show argument --output program"
+          ],
+          "notMatch": [
+            "git show docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --output=*",
+          "match": [
+            "git show argument --output=program"
+          ],
+          "notMatch": [
+            "git show docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git show --ext-diff*",
+          "match": [
+            "git show --ext-diff=value"
+          ],
+          "notMatch": [
+            "git show docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --ext-diff*",
+          "match": [
+            "git show argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git show docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git show --upload-pack*",
+          "match": [
+            "git show --upload-pack=value"
+          ],
+          "notMatch": [
+            "git show docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --upload-pack*",
+          "match": [
+            "git show argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git show docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git show --output*",
+          "match": [
+            "git show --output=value"
+          ],
+          "notMatch": [
+            "git show docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git show * --output*",
+          "match": [
+            "git show argument --output=value"
+          ],
+          "notMatch": [
+            "git show docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3298,8 +4338,7 @@
             "git show abc:path"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3321,33 +4360,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git rev-parse *--output*",
+          "pattern": "git rev-parse --output",
           "match": [
-            "git rev-parse --output=value",
-            "git rev-parse --short HEAD --output=value"
+            "git rev-parse --output"
           ],
           "notMatch": [
-            "git rev-parse --short HEAD"
+            "git rev-parse docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git rev-parse *--ext-diff*",
+          "pattern": "git rev-parse --output *",
           "match": [
-            "git rev-parse --ext-diff=value",
-            "git rev-parse --short HEAD --ext-diff=value"
+            "git rev-parse --output program"
           ],
           "notMatch": [
-            "git rev-parse --short HEAD"
+            "git rev-parse docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git rev-parse *--upload-pack*",
+          "pattern": "git rev-parse --output=*",
           "match": [
-            "git rev-parse --upload-pack=value",
-            "git rev-parse --short HEAD --upload-pack=value"
+            "git rev-parse --output=program"
           ],
           "notMatch": [
-            "git rev-parse --short HEAD"
+            "git rev-parse docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --output",
+          "match": [
+            "git rev-parse argument --output"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --output *",
+          "match": [
+            "git rev-parse argument --output program"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --output=*",
+          "match": [
+            "git rev-parse argument --output=program"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse --ext-diff*",
+          "match": [
+            "git rev-parse --ext-diff=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --ext-diff*",
+          "match": [
+            "git rev-parse argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse --upload-pack*",
+          "match": [
+            "git rev-parse --upload-pack=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --upload-pack*",
+          "match": [
+            "git rev-parse argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git rev-parse --output*",
+          "match": [
+            "git rev-parse --output=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git rev-parse * --output*",
+          "match": [
+            "git rev-parse argument --output=value"
+          ],
+          "notMatch": [
+            "git rev-parse docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3368,8 +4488,7 @@
             "git rev-parse --short HEAD"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3391,60 +4510,111 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git grep *--output*",
+          "pattern": "git grep --output",
           "match": [
-            "git grep --output=value",
-            "git grep needle --output=value"
+            "git grep --output"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git grep *--ext-diff*",
+          "pattern": "git grep --output *",
           "match": [
-            "git grep --ext-diff=value",
-            "git grep needle --ext-diff=value"
+            "git grep --output program"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git grep *--upload-pack*",
+          "pattern": "git grep --output=*",
           "match": [
-            "git grep --upload-pack=value",
-            "git grep needle --upload-pack=value"
+            "git grep --output=program"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git grep -c*",
+          "pattern": "git grep * --output",
           "match": [
-            "git grep -c name=value"
+            "git grep argument --output"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git grep * -c*",
+          "pattern": "git grep * --output *",
           "match": [
-            "git grep --help -c name=value"
+            "git grep argument --output program"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git grep *--open-files-in-pager*",
+          "pattern": "git grep * --output=*",
           "match": [
-            "git grep --open-files-in-pager=program needle"
+            "git grep argument --output=program"
           ],
           "notMatch": [
-            "git grep needle"
+            "git grep docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git grep --ext-diff*",
+          "match": [
+            "git grep --ext-diff=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep * --ext-diff*",
+          "match": [
+            "git grep argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep --upload-pack*",
+          "match": [
+            "git grep --upload-pack=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep * --upload-pack*",
+          "match": [
+            "git grep argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep --open-files-in-pager*",
+          "match": [
+            "git grep --open-files-in-pager=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--open-files-in-pagerintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep * --open-files-in-pager*",
+          "match": [
+            "git grep argument --open-files-in-pager=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--open-files-in-pagerintegration.txt"
           ]
         },
         {
@@ -3466,7 +4636,45 @@
           ]
         }
       ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git grep --output*",
+          "match": [
+            "git grep --output=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep * --output*",
+          "match": [
+            "git grep argument --output=value"
+          ],
+          "notMatch": [
+            "git grep docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git grep -c*",
+          "match": [
+            "git grep -c name=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        },
+        {
+          "pattern": "git grep * -c*",
+          "match": [
+            "git grep --help -c name=value"
+          ],
+          "notMatch": [
+            "git grep needle"
+          ]
+        }
+      ]
     },
     {
       "pattern": [
@@ -3488,33 +4696,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git ls-files *--output*",
+          "pattern": "git ls-files --output",
           "match": [
-            "git ls-files --output=value",
-            "git ls-files --output=value"
+            "git ls-files --output"
           ],
           "notMatch": [
-            "git ls-files"
+            "git ls-files docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git ls-files *--ext-diff*",
+          "pattern": "git ls-files --output *",
           "match": [
-            "git ls-files --ext-diff=value",
+            "git ls-files --output program"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files --output=*",
+          "match": [
+            "git ls-files --output=program"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files * --output",
+          "match": [
+            "git ls-files argument --output"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files * --output *",
+          "match": [
+            "git ls-files argument --output program"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files * --output=*",
+          "match": [
+            "git ls-files argument --output=program"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files --ext-diff*",
+          "match": [
             "git ls-files --ext-diff=value"
           ],
           "notMatch": [
-            "git ls-files"
+            "git ls-files docs/name--ext-diffintegration.txt"
           ]
         },
         {
-          "pattern": "git ls-files *--upload-pack*",
+          "pattern": "git ls-files * --ext-diff*",
           "match": [
-            "git ls-files --upload-pack=value",
+            "git ls-files argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files --upload-pack*",
+          "match": [
             "git ls-files --upload-pack=value"
           ],
           "notMatch": [
-            "git ls-files"
+            "git ls-files docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files * --upload-pack*",
+          "match": [
+            "git ls-files argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git ls-files --output*",
+          "match": [
+            "git ls-files --output=value"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-files * --output*",
+          "match": [
+            "git ls-files argument --output=value"
+          ],
+          "notMatch": [
+            "git ls-files docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3535,8 +4824,7 @@
             "git ls-files"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3558,33 +4846,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git ls-tree *--output*",
+          "pattern": "git ls-tree --output",
           "match": [
-            "git ls-tree --output=value",
-            "git ls-tree HEAD --output=value"
+            "git ls-tree --output"
           ],
           "notMatch": [
-            "git ls-tree HEAD"
+            "git ls-tree docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git ls-tree *--ext-diff*",
+          "pattern": "git ls-tree --output *",
           "match": [
-            "git ls-tree --ext-diff=value",
-            "git ls-tree HEAD --ext-diff=value"
+            "git ls-tree --output program"
           ],
           "notMatch": [
-            "git ls-tree HEAD"
+            "git ls-tree docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git ls-tree *--upload-pack*",
+          "pattern": "git ls-tree --output=*",
           "match": [
-            "git ls-tree --upload-pack=value",
-            "git ls-tree HEAD --upload-pack=value"
+            "git ls-tree --output=program"
           ],
           "notMatch": [
-            "git ls-tree HEAD"
+            "git ls-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --output",
+          "match": [
+            "git ls-tree argument --output"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --output *",
+          "match": [
+            "git ls-tree argument --output program"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --output=*",
+          "match": [
+            "git ls-tree argument --output=program"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree --ext-diff*",
+          "match": [
+            "git ls-tree --ext-diff=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --ext-diff*",
+          "match": [
+            "git ls-tree argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree --upload-pack*",
+          "match": [
+            "git ls-tree --upload-pack=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --upload-pack*",
+          "match": [
+            "git ls-tree argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git ls-tree --output*",
+          "match": [
+            "git ls-tree --output=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git ls-tree * --output*",
+          "match": [
+            "git ls-tree argument --output=value"
+          ],
+          "notMatch": [
+            "git ls-tree docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3605,8 +4974,7 @@
             "git ls-tree HEAD"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3628,33 +4996,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git blame *--output*",
+          "pattern": "git blame --output",
           "match": [
-            "git blame --output=value",
-            "git blame README.md --output=value"
+            "git blame --output"
           ],
           "notMatch": [
-            "git blame README.md"
+            "git blame docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git blame *--ext-diff*",
+          "pattern": "git blame --output *",
           "match": [
-            "git blame --ext-diff=value",
-            "git blame README.md --ext-diff=value"
+            "git blame --output program"
           ],
           "notMatch": [
-            "git blame README.md"
+            "git blame docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git blame *--upload-pack*",
+          "pattern": "git blame --output=*",
           "match": [
-            "git blame --upload-pack=value",
-            "git blame README.md --upload-pack=value"
+            "git blame --output=program"
           ],
           "notMatch": [
-            "git blame README.md"
+            "git blame docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --output",
+          "match": [
+            "git blame argument --output"
+          ],
+          "notMatch": [
+            "git blame docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --output *",
+          "match": [
+            "git blame argument --output program"
+          ],
+          "notMatch": [
+            "git blame docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --output=*",
+          "match": [
+            "git blame argument --output=program"
+          ],
+          "notMatch": [
+            "git blame docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git blame --ext-diff*",
+          "match": [
+            "git blame --ext-diff=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --ext-diff*",
+          "match": [
+            "git blame argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git blame --upload-pack*",
+          "match": [
+            "git blame --upload-pack=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --upload-pack*",
+          "match": [
+            "git blame argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git blame --output*",
+          "match": [
+            "git blame --output=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git blame * --output*",
+          "match": [
+            "git blame argument --output=value"
+          ],
+          "notMatch": [
+            "git blame docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3675,8 +5124,7 @@
             "git blame README.md"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -3699,51 +5147,93 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git remote -v *--output*",
+          "pattern": "git remote -v --output",
           "match": [
-            "git remote -v --output=value",
-            "git remote -v --output=value"
+            "git remote -v --output"
           ],
           "notMatch": [
-            "git remote -v"
+            "git remote -v docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git remote -v *--ext-diff*",
+          "pattern": "git remote -v --output *",
           "match": [
-            "git remote -v --ext-diff=value",
+            "git remote -v --output program"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v --output=*",
+          "match": [
+            "git remote -v --output=program"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v * --output",
+          "match": [
+            "git remote -v argument --output"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v * --output *",
+          "match": [
+            "git remote -v argument --output program"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v * --output=*",
+          "match": [
+            "git remote -v argument --output=program"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v --ext-diff*",
+          "match": [
             "git remote -v --ext-diff=value"
           ],
           "notMatch": [
-            "git remote -v"
+            "git remote -v docs/name--ext-diffintegration.txt"
           ]
         },
         {
-          "pattern": "git remote -v *--upload-pack*",
+          "pattern": "git remote -v * --ext-diff*",
           "match": [
-            "git remote -v --upload-pack=value",
+            "git remote -v argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v --upload-pack*",
+          "match": [
             "git remote -v --upload-pack=value"
           ],
           "notMatch": [
-            "git remote -v"
+            "git remote -v docs/name--upload-packintegration.txt"
           ]
         },
         {
-          "pattern": "git remote -v -c*",
+          "pattern": "git remote -v * --upload-pack*",
           "match": [
-            "git remote -v -c name=value"
+            "git remote -v argument --upload-pack=value"
           ],
           "notMatch": [
-            "git remote -v"
-          ]
-        },
-        {
-          "pattern": "git remote -v * -c*",
-          "match": [
-            "git remote -v --help -c name=value"
-          ],
-          "notMatch": [
-            "git remote -v"
+            "git remote -v docs/name--upload-packintegration.txt"
           ]
         }
       ],
@@ -3928,6 +5418,42 @@
             "git remote -v",
             "git remote -v get-url origin"
           ]
+        },
+        {
+          "pattern": "git remote -v --output*",
+          "match": [
+            "git remote -v --output=value"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v * --output*",
+          "match": [
+            "git remote -v argument --output=value"
+          ],
+          "notMatch": [
+            "git remote -v docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git remote -v -c*",
+          "match": [
+            "git remote -v -c name=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
+        },
+        {
+          "pattern": "git remote -v * -c*",
+          "match": [
+            "git remote -v --help -c name=value"
+          ],
+          "notMatch": [
+            "git remote -v"
+          ]
         }
       ]
     },
@@ -3952,33 +5478,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git stash list *--output*",
+          "pattern": "git stash list --output",
           "match": [
-            "git stash list --output=value",
-            "git stash list --output=value"
+            "git stash list --output"
           ],
           "notMatch": [
-            "git stash list"
+            "git stash list docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git stash list *--ext-diff*",
+          "pattern": "git stash list --output *",
           "match": [
-            "git stash list --ext-diff=value",
+            "git stash list --output program"
+          ],
+          "notMatch": [
+            "git stash list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list --output=*",
+          "match": [
+            "git stash list --output=program"
+          ],
+          "notMatch": [
+            "git stash list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list * --output",
+          "match": [
+            "git stash list argument --output"
+          ],
+          "notMatch": [
+            "git stash list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list * --output *",
+          "match": [
+            "git stash list argument --output program"
+          ],
+          "notMatch": [
+            "git stash list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list * --output=*",
+          "match": [
+            "git stash list argument --output=program"
+          ],
+          "notMatch": [
+            "git stash list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list --ext-diff*",
+          "match": [
             "git stash list --ext-diff=value"
           ],
           "notMatch": [
-            "git stash list"
+            "git stash list docs/name--ext-diffintegration.txt"
           ]
         },
         {
-          "pattern": "git stash list *--upload-pack*",
+          "pattern": "git stash list * --ext-diff*",
           "match": [
-            "git stash list --upload-pack=value",
+            "git stash list argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git stash list docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list --upload-pack*",
+          "match": [
             "git stash list --upload-pack=value"
           ],
           "notMatch": [
-            "git stash list"
+            "git stash list docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list * --upload-pack*",
+          "match": [
+            "git stash list argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git stash list docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git stash list --output*",
+          "match": [
+            "git stash list --output=value"
+          ],
+          "notMatch": [
+            "git stash list docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git stash list * --output*",
+          "match": [
+            "git stash list argument --output=value"
+          ],
+          "notMatch": [
+            "git stash list docs/name--outputintegration.txt"
           ]
         },
         {
@@ -3999,8 +5606,7 @@
             "git stash list"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -4023,33 +5629,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git tag --list *--output*",
+          "pattern": "git tag --list --output",
           "match": [
-            "git tag --list --output=value",
-            "git tag --list --output=value"
+            "git tag --list --output"
           ],
           "notMatch": [
-            "git tag --list"
+            "git tag --list docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git tag --list *--ext-diff*",
+          "pattern": "git tag --list --output *",
           "match": [
-            "git tag --list --ext-diff=value",
+            "git tag --list --output program"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list --output=*",
+          "match": [
+            "git tag --list --output=program"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list * --output",
+          "match": [
+            "git tag --list argument --output"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list * --output *",
+          "match": [
+            "git tag --list argument --output program"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list * --output=*",
+          "match": [
+            "git tag --list argument --output=program"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list --ext-diff*",
+          "match": [
             "git tag --list --ext-diff=value"
           ],
           "notMatch": [
-            "git tag --list"
+            "git tag --list docs/name--ext-diffintegration.txt"
           ]
         },
         {
-          "pattern": "git tag --list *--upload-pack*",
+          "pattern": "git tag --list * --ext-diff*",
           "match": [
-            "git tag --list --upload-pack=value",
+            "git tag --list argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list --upload-pack*",
+          "match": [
             "git tag --list --upload-pack=value"
           ],
           "notMatch": [
-            "git tag --list"
+            "git tag --list docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list * --upload-pack*",
+          "match": [
+            "git tag --list argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git tag --list --output*",
+          "match": [
+            "git tag --list --output=value"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git tag --list * --output*",
+          "match": [
+            "git tag --list argument --output=value"
+          ],
+          "notMatch": [
+            "git tag --list docs/name--outputintegration.txt"
           ]
         },
         {
@@ -4070,8 +5757,7 @@
             "git tag --list"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -4094,33 +5780,114 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git worktree list *--output*",
+          "pattern": "git worktree list --output",
           "match": [
-            "git worktree list --output=value",
-            "git worktree list --porcelain --output=value"
+            "git worktree list --output"
           ],
           "notMatch": [
-            "git worktree list --porcelain"
+            "git worktree list docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git worktree list *--ext-diff*",
+          "pattern": "git worktree list --output *",
           "match": [
-            "git worktree list --ext-diff=value",
-            "git worktree list --porcelain --ext-diff=value"
+            "git worktree list --output program"
           ],
           "notMatch": [
-            "git worktree list --porcelain"
+            "git worktree list docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git worktree list *--upload-pack*",
+          "pattern": "git worktree list --output=*",
           "match": [
-            "git worktree list --upload-pack=value",
-            "git worktree list --porcelain --upload-pack=value"
+            "git worktree list --output=program"
           ],
           "notMatch": [
-            "git worktree list --porcelain"
+            "git worktree list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --output",
+          "match": [
+            "git worktree list argument --output"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --output *",
+          "match": [
+            "git worktree list argument --output program"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --output=*",
+          "match": [
+            "git worktree list argument --output=program"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list --ext-diff*",
+          "match": [
+            "git worktree list --ext-diff=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --ext-diff*",
+          "match": [
+            "git worktree list argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list --upload-pack*",
+          "match": [
+            "git worktree list --upload-pack=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --upload-pack*",
+          "match": [
+            "git worktree list argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement.",
+      "claudeAsk": [
+        {
+          "pattern": "git worktree list --output*",
+          "match": [
+            "git worktree list --output=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git worktree list * --output*",
+          "match": [
+            "git worktree list argument --output=value"
+          ],
+          "notMatch": [
+            "git worktree list docs/name--outputintegration.txt"
           ]
         },
         {
@@ -4141,8 +5908,7 @@
             "git worktree list --porcelain"
           ]
         }
-      ],
-      "residualRisk": "Les hooks, filtres, pager et configuration Git existants sont supposés de confiance. Les gardes Claude sont textuelles ; les chemins et options cités ou combinés ne sont pas analysés exhaustivement."
+      ]
     },
     {
       "pattern": [
@@ -4165,33 +5931,93 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "git branch *--output*",
+          "pattern": "git branch --output",
           "match": [
-            "git branch --output=value",
-            "git branch --no-merged origin/main --output=value"
+            "git branch --output"
           ],
           "notMatch": [
-            "git branch --no-merged origin/main"
+            "git branch docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git branch *--ext-diff*",
+          "pattern": "git branch --output *",
           "match": [
-            "git branch --ext-diff=value",
-            "git branch --no-merged origin/main --ext-diff=value"
+            "git branch --output program"
           ],
           "notMatch": [
-            "git branch --no-merged origin/main"
+            "git branch docs/name--output.txt"
           ]
         },
         {
-          "pattern": "git branch *--upload-pack*",
+          "pattern": "git branch --output=*",
           "match": [
-            "git branch --upload-pack=value",
-            "git branch --no-merged origin/main --upload-pack=value"
+            "git branch --output=program"
           ],
           "notMatch": [
-            "git branch --no-merged origin/main"
+            "git branch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --output",
+          "match": [
+            "git branch argument --output"
+          ],
+          "notMatch": [
+            "git branch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --output *",
+          "match": [
+            "git branch argument --output program"
+          ],
+          "notMatch": [
+            "git branch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --output=*",
+          "match": [
+            "git branch argument --output=program"
+          ],
+          "notMatch": [
+            "git branch docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git branch --ext-diff*",
+          "match": [
+            "git branch --ext-diff=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --ext-diff*",
+          "match": [
+            "git branch argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git branch --upload-pack*",
+          "match": [
+            "git branch --upload-pack=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --upload-pack*",
+          "match": [
+            "git branch argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--upload-packintegration.txt"
           ]
         }
       ],
@@ -4515,6 +6341,24 @@
             "git branch --no-merged origin/main",
             "git branch feature"
           ]
+        },
+        {
+          "pattern": "git branch --output*",
+          "match": [
+            "git branch --output=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git branch * --output*",
+          "match": [
+            "git branch argument --output=value"
+          ],
+          "notMatch": [
+            "git branch docs/name--outputintegration.txt"
+          ]
         }
       ],
       "residualRisk": "La création locale sans option est autorisée. Les options de mutation citées exigent un accord ; les gardes sont textuelles et ne décomposent pas tous les groupes d’options courtes."
@@ -4749,21 +6593,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "mkdir *.env*",
+          "pattern": "mkdir .env*",
           "match": [
-            "mkdir docs/.env.local"
+            "mkdir .env"
           ],
           "notMatch": [
-            "mkdir -p docs/plans"
+            "mkdir docs/report.env.integration.txt"
           ]
         },
         {
-          "pattern": "mkdir *..*",
+          "pattern": "mkdir * .env*",
           "match": [
-            "mkdir ../outside"
+            "mkdir argument .env.local"
           ],
           "notMatch": [
-            "mkdir -p docs/plans"
+            "mkdir docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "mkdir \".env*",
+          "match": [
+            "mkdir \".env\""
+          ],
+          "notMatch": [
+            "mkdir docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "mkdir * \".env*",
+          "match": [
+            "mkdir argument \".env.local\""
+          ],
+          "notMatch": [
+            "mkdir docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "mkdir '.env*",
+          "match": [
+            "mkdir '.env'"
+          ],
+          "notMatch": [
+            "mkdir docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "mkdir * '.env*",
+          "match": [
+            "mkdir argument '.env.local'"
+          ],
+          "notMatch": [
+            "mkdir docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "mkdir */.env*",
+          "match": [
+            "mkdir config/.env.local"
+          ],
+          "notMatch": [
+            "mkdir docs/report.env.integration.txt"
           ]
         },
         {
@@ -4828,6 +6717,18 @@
           "notMatch": [
             "mkdir -p docs/plans"
           ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable.",
+      "claudeAsk": [
+        {
+          "pattern": "mkdir *..*",
+          "match": [
+            "mkdir ../outside"
+          ],
+          "notMatch": [
+            "mkdir -p docs/plans"
+          ]
         },
         {
           "pattern": "mkdir *~*",
@@ -4865,8 +6766,7 @@
             "mkdir -p docs/plans"
           ]
         }
-      ],
-      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
+      ]
     },
     {
       "pattern": [
@@ -4886,21 +6786,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "cp *.env*",
+          "pattern": "cp .env*",
           "match": [
-            "cp docs/.env.local"
+            "cp .env"
           ],
           "notMatch": [
-            "cp README.md docs/copy.md"
+            "cp docs/report.env.integration.txt"
           ]
         },
         {
-          "pattern": "cp *..*",
+          "pattern": "cp * .env*",
           "match": [
-            "cp ../outside"
+            "cp argument .env.local"
           ],
           "notMatch": [
-            "cp README.md docs/copy.md"
+            "cp docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cp \".env*",
+          "match": [
+            "cp \".env\""
+          ],
+          "notMatch": [
+            "cp docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cp * \".env*",
+          "match": [
+            "cp argument \".env.local\""
+          ],
+          "notMatch": [
+            "cp docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cp '.env*",
+          "match": [
+            "cp '.env'"
+          ],
+          "notMatch": [
+            "cp docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cp * '.env*",
+          "match": [
+            "cp argument '.env.local'"
+          ],
+          "notMatch": [
+            "cp docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "cp */.env*",
+          "match": [
+            "cp config/.env.local"
+          ],
+          "notMatch": [
+            "cp docs/report.env.integration.txt"
           ]
         },
         {
@@ -4965,6 +6910,18 @@
           "notMatch": [
             "cp README.md docs/copy.md"
           ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable.",
+      "claudeAsk": [
+        {
+          "pattern": "cp *..*",
+          "match": [
+            "cp ../outside"
+          ],
+          "notMatch": [
+            "cp README.md docs/copy.md"
+          ]
         },
         {
           "pattern": "cp *~*",
@@ -5003,17 +6960,24 @@
           ]
         },
         {
-          "pattern": "cp *-t*",
+          "pattern": "cp -t*",
           "match": [
-            "cp -t/outside file",
-            "cp --target-directory=docs file"
+            "cp -tvalue"
           ],
           "notMatch": [
-            "cp README.md docs/copy.md"
+            "cp docs/name-tintegration.txt"
+          ]
+        },
+        {
+          "pattern": "cp * -t*",
+          "match": [
+            "cp argument -tvalue"
+          ],
+          "notMatch": [
+            "cp docs/name-tintegration.txt"
           ]
         }
-      ],
-      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
+      ]
     },
     {
       "pattern": [
@@ -5033,21 +6997,66 @@
       ],
       "claudeDeny": [
         {
-          "pattern": "touch *.env*",
+          "pattern": "touch .env*",
           "match": [
-            "touch docs/.env.local"
+            "touch .env"
           ],
           "notMatch": [
-            "touch docs/notes.md"
+            "touch docs/report.env.integration.txt"
           ]
         },
         {
-          "pattern": "touch *..*",
+          "pattern": "touch * .env*",
           "match": [
-            "touch ../outside"
+            "touch argument .env.local"
           ],
           "notMatch": [
-            "touch docs/notes.md"
+            "touch docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch \".env*",
+          "match": [
+            "touch \".env\""
+          ],
+          "notMatch": [
+            "touch docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch * \".env*",
+          "match": [
+            "touch argument \".env.local\""
+          ],
+          "notMatch": [
+            "touch docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch '.env*",
+          "match": [
+            "touch '.env'"
+          ],
+          "notMatch": [
+            "touch docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch * '.env*",
+          "match": [
+            "touch argument '.env.local'"
+          ],
+          "notMatch": [
+            "touch docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch */.env*",
+          "match": [
+            "touch config/.env.local"
+          ],
+          "notMatch": [
+            "touch docs/report.env.integration.txt"
           ]
         },
         {
@@ -5112,6 +7121,18 @@
           "notMatch": [
             "touch docs/notes.md"
           ]
+        }
+      ],
+      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable.",
+      "claudeAsk": [
+        {
+          "pattern": "touch *..*",
+          "match": [
+            "touch ../outside"
+          ],
+          "notMatch": [
+            "touch docs/notes.md"
+          ]
         },
         {
           "pattern": "touch *~*",
@@ -5150,16 +7171,2792 @@
           ]
         },
         {
-          "pattern": "touch *-r/*",
+          "pattern": "touch -r/*",
           "match": [
-            "touch -r/outside file"
+            "touch -r/value"
           ],
           "notMatch": [
-            "touch docs/notes.md"
+            "touch docs/name-r/integration.txt"
+          ]
+        },
+        {
+          "pattern": "touch * -r/*",
+          "match": [
+            "touch argument -r/value"
+          ],
+          "notMatch": [
+            "touch docs/name-r/integration.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "jq"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "jq"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "cut"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "cut"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "tr"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "tr"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "column"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "column"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "diff"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "diff"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "diff .env*",
+          "match": [
+            "diff .env"
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff * .env*",
+          "match": [
+            "diff argument .env.local"
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff \".env*",
+          "match": [
+            "diff \".env\""
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff * \".env*",
+          "match": [
+            "diff argument \".env.local\""
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff '.env*",
+          "match": [
+            "diff '.env'"
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff * '.env*",
+          "match": [
+            "diff argument '.env.local'"
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        },
+        {
+          "pattern": "diff */.env*",
+          "match": [
+            "diff config/.env.local"
+          ],
+          "notMatch": [
+            "diff docs/report.env.integration.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "comm"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "comm"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "basename"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "basename"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "dirname"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "dirname"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "realpath"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "realpath"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "stat"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "stat"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "file"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "file"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "file -C*",
+          "match": [
+            "file -Cvalue"
+          ],
+          "notMatch": [
+            "file docs/name-Cintegration.txt"
+          ]
+        },
+        {
+          "pattern": "file * -C*",
+          "match": [
+            "file argument -Cvalue"
+          ],
+          "notMatch": [
+            "file docs/name-Cintegration.txt"
+          ]
+        },
+        {
+          "pattern": "file --compile*",
+          "match": [
+            "file --compile=value"
+          ],
+          "notMatch": [
+            "file docs/name--compileintegration.txt"
+          ]
+        },
+        {
+          "pattern": "file * --compile*",
+          "match": [
+            "file argument --compile=value"
+          ],
+          "notMatch": [
+            "file docs/name--compileintegration.txt"
+          ]
+        }
+      ]
+    },
+    {
+      "pattern": [
+        "du"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "du"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "df"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "df"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "gh",
+        "run",
+        "watch"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "gh run watch"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "awk"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Lecture ou filtre courant autorisé pour Claude, avec variantes sensibles gardées.",
+      "match": [
+        "awk"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "claudeAsk": [
+        {
+          "pattern": "awk *>*",
+          "match": [
+            "awk '$3 > 5' file"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk *|*",
+          "match": [
+            "awk 'BEGIN { print 1 | \"command\" }'"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk *system*(*",
+          "match": [
+            "awk 'BEGIN { system (\"command\") }'"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk *getline*",
+          "match": [
+            "awk 'BEGIN { \"command\" | getline x }'"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk *@include*",
+          "match": [
+            "awk '@include \"program.awk\"'"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk *@load*",
+          "match": [
+            "awk '@load \"extension\"'"
+          ],
+          "notMatch": [
+            "awk '{print $1}' file"
+          ]
+        },
+        {
+          "pattern": "awk -f*",
+          "match": [
+            "awk -fvalue"
+          ],
+          "notMatch": [
+            "awk docs/name-fintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * -f*",
+          "match": [
+            "awk argument -fvalue"
+          ],
+          "notMatch": [
+            "awk docs/name-fintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk -i*",
+          "match": [
+            "awk -ivalue"
+          ],
+          "notMatch": [
+            "awk docs/name-iintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * -i*",
+          "match": [
+            "awk argument -ivalue"
+          ],
+          "notMatch": [
+            "awk docs/name-iintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk -E*",
+          "match": [
+            "awk -Evalue"
+          ],
+          "notMatch": [
+            "awk docs/name-Eintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * -E*",
+          "match": [
+            "awk argument -Evalue"
+          ],
+          "notMatch": [
+            "awk docs/name-Eintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk -l*",
+          "match": [
+            "awk -lvalue"
+          ],
+          "notMatch": [
+            "awk docs/name-lintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * -l*",
+          "match": [
+            "awk argument -lvalue"
+          ],
+          "notMatch": [
+            "awk docs/name-lintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk --file*",
+          "match": [
+            "awk --file=value"
+          ],
+          "notMatch": [
+            "awk docs/name--fileintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * --file*",
+          "match": [
+            "awk argument --file=value"
+          ],
+          "notMatch": [
+            "awk docs/name--fileintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk --include*",
+          "match": [
+            "awk --include=value"
+          ],
+          "notMatch": [
+            "awk docs/name--includeintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * --include*",
+          "match": [
+            "awk argument --include=value"
+          ],
+          "notMatch": [
+            "awk docs/name--includeintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk --exec*",
+          "match": [
+            "awk --exec=value"
+          ],
+          "notMatch": [
+            "awk docs/name--execintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * --exec*",
+          "match": [
+            "awk argument --exec=value"
+          ],
+          "notMatch": [
+            "awk docs/name--execintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk --load*",
+          "match": [
+            "awk --load=value"
+          ],
+          "notMatch": [
+            "awk docs/name--loadintegration.txt"
+          ]
+        },
+        {
+          "pattern": "awk * --load*",
+          "match": [
+            "awk argument --load=value"
+          ],
+          "notMatch": [
+            "awk docs/name--loadintegration.txt"
           ]
         }
       ],
-      "residualRisk": "Gardes textuelles sur chemins absolus, .., .env et expansions. Les liens symboliques et montages ne sont pas résolus ; la frontière d’écriture de l’agent reste applicable."
+      "residualRisk": "Les motifs textuels peuvent inclure une comparaison légitime ou getline depuis un fichier : demander un accord, jamais refuser. Aucune règle Codex, dont le sandbox confine les écritures."
+    },
+    {
+      "pattern": [
+        "env"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "prompt",
+      "riskClass": "read-only",
+      "justification": "Peut afficher des jetons de l’environnement ou exécuter une commande.",
+      "match": [
+        "env"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "sqlite3"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "prompt",
+      "riskClass": "arbitrary-execution",
+      "justification": "Le chemin de la base ne confine ni SQL ni les méta-commandes shell et fichiers.",
+      "match": [
+        "sqlite3"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "cd"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Change uniquement le répertoire courant du shell ; les autres segments composés gardent leurs propres décisions.",
+      "match": [
+        "cd"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ]
+    },
+    {
+      "pattern": [
+        "git",
+        "merge-tree"
+      ],
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Crée des objets Git locaux sans modifier les branches, l’index ou le worktree.",
+      "match": [
+        "git merge-tree"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git merge-tree --output",
+          "match": [
+            "git merge-tree --output"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree --output *",
+          "match": [
+            "git merge-tree --output program"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree --output=*",
+          "match": [
+            "git merge-tree --output=program"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --output",
+          "match": [
+            "git merge-tree argument --output"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --output *",
+          "match": [
+            "git merge-tree argument --output program"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --output=*",
+          "match": [
+            "git merge-tree argument --output=program"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--output.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree --ext-diff*",
+          "match": [
+            "git merge-tree --ext-diff=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --ext-diff*",
+          "match": [
+            "git merge-tree argument --ext-diff=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--ext-diffintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree --upload-pack*",
+          "match": [
+            "git merge-tree --upload-pack=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--upload-packintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --upload-pack*",
+          "match": [
+            "git merge-tree argument --upload-pack=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--upload-packintegration.txt"
+          ]
+        }
+      ],
+      "claudeAsk": [
+        {
+          "pattern": "git merge-tree --output*",
+          "match": [
+            "git merge-tree --output=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * --output*",
+          "match": [
+            "git merge-tree argument --output=value"
+          ],
+          "notMatch": [
+            "git merge-tree docs/name--outputintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git merge-tree -c*",
+          "match": [
+            "git merge-tree -c name=value"
+          ],
+          "notMatch": [
+            "git merge-tree --short"
+          ]
+        },
+        {
+          "pattern": "git merge-tree * -c*",
+          "match": [
+            "git merge-tree --help -c name=value"
+          ],
+          "notMatch": [
+            "git merge-tree --short"
+          ]
+        }
+      ]
+    },
+    {
+      "claudePattern": "uniq",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq"
+      ],
+      "notMatch": [
+        "uniq input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -c",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -c"
+      ],
+      "notMatch": [
+        "uniq -c input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -d",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -d"
+      ],
+      "notMatch": [
+        "uniq -d input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -u",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -u"
+      ],
+      "notMatch": [
+        "uniq -u input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -i",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -i"
+      ],
+      "notMatch": [
+        "uniq -i input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -c -i",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -c -i"
+      ],
+      "notMatch": [
+        "uniq -c -i input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -i -c",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -i -c"
+      ],
+      "notMatch": [
+        "uniq -i -c input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -d -i",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -d -i"
+      ],
+      "notMatch": [
+        "uniq -d -i input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -i -d",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -i -d"
+      ],
+      "notMatch": [
+        "uniq -i -d input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -u -i",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -u -i"
+      ],
+      "notMatch": [
+        "uniq -u -i input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -i -u",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -i -u"
+      ],
+      "notMatch": [
+        "uniq -i -u input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -cd",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -cd"
+      ],
+      "notMatch": [
+        "uniq -cd input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -ci",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -ci"
+      ],
+      "notMatch": [
+        "uniq -ci input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -di",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -di"
+      ],
+      "notMatch": [
+        "uniq -di input output"
+      ]
+    },
+    {
+      "claudePattern": "uniq -ui",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Forme exacte sans nom de fichier de sortie ; les autres formes restent soumises à accord faute de règle.",
+      "residualRisk": "Codex ne sait pas exprimer la fin des arguments : aucune règle Codex, pour garder uniq dans son sandbox.",
+      "match": [
+        "uniq -ui"
+      ],
+      "notMatch": [
+        "uniq -ui input output"
+      ]
+    },
+    {
+      "pattern": [
+        "rg"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "rg"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Une règle allow sort du sandbox : rg --pre peut exécuter un programme ; risque accepté explicitement pour ce filtre."
+    },
+    {
+      "pattern": [
+        "grep"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "grep"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Le miroir rtk grep utilise ripgrep et admet --pre hors sandbox, comme rg. Aucun filtrage Codex des noms .env ou des arguments libres."
+    },
+    {
+      "pattern": [
+        "head"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "head"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Autorisation Codex explicite hors sandbox ; le préfixe ne filtre pas les noms de fichiers ni les arguments libres, notamment les lectures .env."
+    },
+    {
+      "pattern": [
+        "tail"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "tail"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Autorisation Codex explicite hors sandbox ; le préfixe ne filtre pas les noms de fichiers ni les arguments libres, notamment les lectures .env."
+    },
+    {
+      "pattern": [
+        "wc"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "wc"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Autorisation Codex explicite hors sandbox ; le préfixe ne filtre pas les noms de fichiers ni les arguments libres, notamment les lectures .env."
+    },
+    {
+      "pattern": [
+        "sort"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "sort"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Le préfixe Codex autorise aussi sort -o et --compress-program hors sandbox ; arguments libres non filtrables."
+    },
+    {
+      "pattern": [
+        "cut"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "cut"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Autorisation Codex explicite hors sandbox ; le préfixe ne filtre pas les noms de fichiers ni les arguments libres, notamment les lectures .env."
+    },
+    {
+      "pattern": [
+        "jq"
+      ],
+      "engines": [
+        "codex"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite pour les filtres purs utilisés couramment sous Codex.",
+      "match": [
+        "jq"
+      ],
+      "notMatch": [
+        "agent-policy-unmatched"
+      ],
+      "residualRisk": "Autorisation Codex explicite hors sandbox ; le préfixe ne filtre pas les noms de fichiers ni les arguments libres, notamment les lectures .env."
+    },
+    {
+      "claudePattern": "git -C * status",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree status"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime.",
+      "claudeAsk": [
+        {
+          "pattern": "git -C * push",
+          "match": [
+            "git -C target push"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * push *",
+          "match": [
+            "git -C target push target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * pull",
+          "match": [
+            "git -C target pull"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * pull *",
+          "match": [
+            "git -C target pull target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * fetch",
+          "match": [
+            "git -C target fetch"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * fetch *",
+          "match": [
+            "git -C target fetch target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * merge",
+          "match": [
+            "git -C target merge"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * merge *",
+          "match": [
+            "git -C target merge target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * rebase",
+          "match": [
+            "git -C target rebase"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * rebase *",
+          "match": [
+            "git -C target rebase target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * reset",
+          "match": [
+            "git -C target reset"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * reset *",
+          "match": [
+            "git -C target reset target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * restore",
+          "match": [
+            "git -C target restore"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * restore *",
+          "match": [
+            "git -C target restore target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * checkout",
+          "match": [
+            "git -C target checkout"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * checkout *",
+          "match": [
+            "git -C target checkout target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * switch",
+          "match": [
+            "git -C target switch"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * switch *",
+          "match": [
+            "git -C target switch target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * commit",
+          "match": [
+            "git -C target commit"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * commit *",
+          "match": [
+            "git -C target commit target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * add",
+          "match": [
+            "git -C target add"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * add *",
+          "match": [
+            "git -C target add target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * stash",
+          "match": [
+            "git -C target stash"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * stash *",
+          "match": [
+            "git -C target stash target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * clean",
+          "match": [
+            "git -C target clean"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * clean *",
+          "match": [
+            "git -C target clean target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * rm",
+          "match": [
+            "git -C target rm"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * rm *",
+          "match": [
+            "git -C target rm target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * tag",
+          "match": [
+            "git -C target tag"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * tag *",
+          "match": [
+            "git -C target tag target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * config",
+          "match": [
+            "git -C target config"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * config *",
+          "match": [
+            "git -C target config target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * gc",
+          "match": [
+            "git -C target gc"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * gc *",
+          "match": [
+            "git -C target gc target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -d*",
+          "match": [
+            "git -C target branch -dtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -D*",
+          "match": [
+            "git -C target branch -Dtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -m*",
+          "match": [
+            "git -C target branch -mtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -M*",
+          "match": [
+            "git -C target branch -Mtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -c*",
+          "match": [
+            "git -C target branch -ctarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -C*",
+          "match": [
+            "git -C target branch -Ctarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -f*",
+          "match": [
+            "git -C target branch -ftarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch -u*",
+          "match": [
+            "git -C target branch -utarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --delete*",
+          "match": [
+            "git -C target branch --deletetarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --move*",
+          "match": [
+            "git -C target branch --movetarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --copy*",
+          "match": [
+            "git -C target branch --copytarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --force*",
+          "match": [
+            "git -C target branch --forcetarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --set-upstream-to*",
+          "match": [
+            "git -C target branch --set-upstream-totarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --unset-upstream*",
+          "match": [
+            "git -C target branch --unset-upstreamtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree add",
+          "match": [
+            "git -C target worktree add"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree add *",
+          "match": [
+            "git -C target worktree add target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree remove",
+          "match": [
+            "git -C target worktree remove"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree remove *",
+          "match": [
+            "git -C target worktree remove target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree prune",
+          "match": [
+            "git -C target worktree prune"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree prune *",
+          "match": [
+            "git -C target worktree prune target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote add",
+          "match": [
+            "git -C target remote add"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote add *",
+          "match": [
+            "git -C target remote add target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-url",
+          "match": [
+            "git -C target remote set-url"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-url *",
+          "match": [
+            "git -C target remote set-url target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote remove",
+          "match": [
+            "git -C target remote remove"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote remove *",
+          "match": [
+            "git -C target remote remove target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote rm",
+          "match": [
+            "git -C target remote rm"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote rm *",
+          "match": [
+            "git -C target remote rm target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote rename",
+          "match": [
+            "git -C target remote rename"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote rename *",
+          "match": [
+            "git -C target remote rename target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote prune",
+          "match": [
+            "git -C target remote prune"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote prune *",
+          "match": [
+            "git -C target remote prune target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote update",
+          "match": [
+            "git -C target remote update"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote update *",
+          "match": [
+            "git -C target remote update target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C rm *",
+          "match": [
+            "git -C rm target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -d*",
+          "match": [
+            "git -C /worktree branch --list -d target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -D*",
+          "match": [
+            "git -C /worktree branch --list -D target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -m*",
+          "match": [
+            "git -C /worktree branch --list -m target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -M*",
+          "match": [
+            "git -C /worktree branch --list -M target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -c*",
+          "match": [
+            "git -C /worktree branch --list -c target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -C*",
+          "match": [
+            "git -C /worktree branch --list -C target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -f*",
+          "match": [
+            "git -C /worktree branch --list -f target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * -u*",
+          "match": [
+            "git -C /worktree branch --list -u target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --delete*",
+          "match": [
+            "git -C /worktree branch --list --delete target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --move*",
+          "match": [
+            "git -C /worktree branch --list --move target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --copy*",
+          "match": [
+            "git -C /worktree branch --list --copy target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --force*",
+          "match": [
+            "git -C /worktree branch --list --force target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --set-upstream-to*",
+          "match": [
+            "git -C /worktree branch --list --set-upstream-to target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C * branch * --unset-upstream*",
+          "match": [
+            "git -C /worktree branch --list --unset-upstream target"
+          ],
+          "notMatch": [
+            "git -C /worktree branch --list"
+          ]
+        },
+        {
+          "pattern": "git -C -c*",
+          "match": [
+            "git -C -cvalue"
+          ],
+          "notMatch": [
+            "git -C docs/name-cintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * -c*",
+          "match": [
+            "git -C argument -cvalue"
+          ],
+          "notMatch": [
+            "git -C docs/name-cintegration.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --exec-path*",
+          "match": [
+            "git -C /worktree --exec-path=/custom status",
+            "git -C /worktree status --exec-path"
+          ],
+          "notMatch": [
+            "git -C /worktree status",
+            "git -C /worktree diff -- docs/name--exec-path.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * --config-env*",
+          "match": [
+            "git -C /worktree --config-env=alias.command=VARIABLE status",
+            "git -C /worktree status --config-env=alias.command=VARIABLE"
+          ],
+          "notMatch": [
+            "git -C /worktree status",
+            "git -C /worktree diff -- docs/name--config-env.txt"
+          ]
+        },
+        {
+          "pattern": "git -C * grep -O*",
+          "match": [
+            "git -C /worktree grep -Oprogram"
+          ],
+          "notMatch": [
+            "git -C /worktree grep needle src"
+          ]
+        },
+        {
+          "pattern": "git -C * grep * -O*",
+          "match": [
+            "git -C /worktree grep needle -Oprogram"
+          ],
+          "notMatch": [
+            "git -C /worktree grep needle src"
+          ]
+        },
+        {
+          "pattern": "git -C * grep --open-files-in-pager*",
+          "match": [
+            "git -C /worktree grep --open-files-in-pagerprogram"
+          ],
+          "notMatch": [
+            "git -C /worktree grep needle src"
+          ]
+        },
+        {
+          "pattern": "git -C * grep * --open-files-in-pager*",
+          "match": [
+            "git -C /worktree grep needle --open-files-in-pagerprogram"
+          ],
+          "notMatch": [
+            "git -C /worktree grep needle src"
+          ]
+        },
+        {
+          "pattern": "git -C * init",
+          "match": [
+            "git -C target init"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * init *",
+          "match": [
+            "git -C target init target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * mv",
+          "match": [
+            "git -C target mv"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * mv *",
+          "match": [
+            "git -C target mv target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * am",
+          "match": [
+            "git -C target am"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * am *",
+          "match": [
+            "git -C target am target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * apply",
+          "match": [
+            "git -C target apply"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * apply *",
+          "match": [
+            "git -C target apply target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * cherry-pick",
+          "match": [
+            "git -C target cherry-pick"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * cherry-pick *",
+          "match": [
+            "git -C target cherry-pick target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * revert",
+          "match": [
+            "git -C target revert"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * revert *",
+          "match": [
+            "git -C target revert target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * bisect",
+          "match": [
+            "git -C target bisect"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * bisect *",
+          "match": [
+            "git -C target bisect target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * notes",
+          "match": [
+            "git -C target notes"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * notes *",
+          "match": [
+            "git -C target notes target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * update-ref",
+          "match": [
+            "git -C target update-ref"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * update-ref *",
+          "match": [
+            "git -C target update-ref target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * update-index",
+          "match": [
+            "git -C target update-index"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * update-index *",
+          "match": [
+            "git -C target update-index target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * read-tree",
+          "match": [
+            "git -C target read-tree"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * read-tree *",
+          "match": [
+            "git -C target read-tree target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * prune",
+          "match": [
+            "git -C target prune"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * prune *",
+          "match": [
+            "git -C target prune target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * repack",
+          "match": [
+            "git -C target repack"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * repack *",
+          "match": [
+            "git -C target repack target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * maintenance",
+          "match": [
+            "git -C target maintenance"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * maintenance *",
+          "match": [
+            "git -C target maintenance target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * format-patch",
+          "match": [
+            "git -C target format-patch"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * format-patch *",
+          "match": [
+            "git -C target format-patch target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --edit-description*",
+          "match": [
+            "git -C target branch --edit-descriptiontarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * branch --create-reflog*",
+          "match": [
+            "git -C target branch --create-reflogtarget"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree move",
+          "match": [
+            "git -C target worktree move"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree move *",
+          "match": [
+            "git -C target worktree move target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree repair",
+          "match": [
+            "git -C target worktree repair"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree repair *",
+          "match": [
+            "git -C target worktree repair target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree lock",
+          "match": [
+            "git -C target worktree lock"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree lock *",
+          "match": [
+            "git -C target worktree lock target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree unlock",
+          "match": [
+            "git -C target worktree unlock"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * worktree unlock *",
+          "match": [
+            "git -C target worktree unlock target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-head",
+          "match": [
+            "git -C target remote set-head"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-head *",
+          "match": [
+            "git -C target remote set-head target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-branches",
+          "match": [
+            "git -C target remote set-branches"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        },
+        {
+          "pattern": "git -C * remote set-branches *",
+          "match": [
+            "git -C target remote set-branches target"
+          ],
+          "notMatch": [
+            "git -C /worktree status"
+          ]
+        }
+      ],
+      "claudeDeny": [
+        {
+          "pattern": "git -C * --output",
+          "match": [
+            "git -C /worktree diff --output"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --output *",
+          "match": [
+            "git -C /worktree diff --output value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --output=*",
+          "match": [
+            "git -C /worktree diff --output=value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --ext-diff",
+          "match": [
+            "git -C /worktree diff --ext-diff"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --ext-diff *",
+          "match": [
+            "git -C /worktree diff --ext-diff value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --ext-diff=*",
+          "match": [
+            "git -C /worktree diff --ext-diff=value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --upload-pack",
+          "match": [
+            "git -C /worktree diff --upload-pack"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --upload-pack *",
+          "match": [
+            "git -C /worktree diff --upload-pack value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        },
+        {
+          "pattern": "git -C * --upload-pack=*",
+          "match": [
+            "git -C /worktree diff --upload-pack=value"
+          ],
+          "notMatch": [
+            "git -C /worktree diff --stat"
+          ]
+        }
+      ]
+    },
+    {
+      "claudePattern": "git -C * status *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree status --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * diff",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree diff"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * diff *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree diff --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * log",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree log"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * log *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree log --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * show",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree show"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * show *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree show --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * rev-parse",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree rev-parse"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * rev-parse *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree rev-parse --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * branch --list",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree branch --list"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * branch --list *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree branch --list --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * ls-files",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree ls-files"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * ls-files *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree ls-files --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * grep",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree grep"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * grep *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree grep --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * merge-tree",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree merge-tree"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * merge-tree *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "local-reversible",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree merge-tree --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * worktree list",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree worktree list"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
+    },
+    {
+      "claudePattern": "git -C * worktree list *",
+      "engines": [
+        "claude"
+      ],
+      "decision": "allow",
+      "riskClass": "read-only",
+      "justification": "Exception explicite au joker interne : lecture Git dans un autre worktree, mutations soumises à accord.",
+      "match": [
+        "git -C /worktree worktree list --verbose"
+      ],
+      "notMatch": [
+        "git -C /worktree push origin main"
+      ],
+      "residualRisk": "Le joker Claude peut englober plusieurs arguments. Les gardes ask de mutations sont obligatoires et peuvent aussi demander un accord pour un nom de chemin ou un argument légitime."
     }
   ]
 }

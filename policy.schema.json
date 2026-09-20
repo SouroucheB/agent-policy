@@ -131,6 +131,12 @@
             "$ref": "#/$defs/claudeDeny"
           },
           "description": "Gardes Claude soumises à accord, prioritaires sur allow et inférieures à deny."
+        },
+        "claudePattern": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_ *\\-]+$",
+          "description": "Motif Claude seul : formes exactes uniq ou exception git -C avec gardes ask obligatoires. Aucun équivalent Codex élargi."
         }
       },
       "oneOf": [
@@ -139,7 +145,12 @@
             "pattern",
             "match",
             "notMatch"
-          ]
+          ],
+          "not": {
+            "required": [
+              "claudePattern"
+            ]
+          }
         },
         {
           "required": [
@@ -167,7 +178,32 @@
                 "required": [
                   "notMatch"
                 ]
+              },
+              {
+                "required": [
+                  "claudePattern"
+                ]
               }
+            ]
+          }
+        },
+        {
+          "required": [
+            "claudePattern",
+            "engines",
+            "match",
+            "notMatch"
+          ],
+          "properties": {
+            "engines": {
+              "const": [
+                "claude"
+              ]
+            }
+          },
+          "not": {
+            "required": [
+              "pattern"
             ]
           }
         }
@@ -185,7 +221,7 @@
         "pattern": {
           "type": "string",
           "minLength": 1,
-          "pattern": "^[A-Za-z0-9_./:@%+,= *<>\"'~$`\\\\\\-]+$"
+          "pattern": "^[A-Za-z0-9_./:@%+,= *<>|()\"'~$`\\\\\\-]+$"
         },
         "match": {
           "type": "array",

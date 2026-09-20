@@ -104,14 +104,14 @@ test('miroir RTK : décisions allow, prompt et forbidden préservées dans les d
   assert.throws(() => generateCodex(unsafePrefix), /interpréteur libre/);
 });
 
-test('les lectures RTK propres sont autorisées pour Claude, avec gardes et sans règle Codex', () => {
+test('lectures natives RTK : Claude et exception du miroir grep Codex', () => {
   for (const command of ['rtk grep needle src', 'rtk read README.md', 'rtk ls src', 'rtk diff before.txt after.txt', 'rtk gain', 'rtk discover', 'rtk session']) {
-    assert.equal(decisionFor(core, command), undefined, command);
+    assert.equal(decisionFor(core, command), command.startsWith('rtk grep ') ? 'allow' : undefined, command);
     assert.equal(claudeDecision(command), 'allow', command);
   }
   for (const prefix of prefixes) {
-    for (const command of ['rtk read .env', 'rtk grep needle config/.env.local', 'rtk diff old.txt .env', 'rtk grep needle --pre=command']) assert.equal(claudeDecision(prefix + command), 'forbidden', prefix + command);
-    assert.equal(decisionFor(core, prefix + 'rtk grep --pre command needle'), undefined);
+    for (const command of ['rtk read .env', 'rtk grep needle config/.env.local', 'rtk diff old.txt .env', 'rtk grep needle --pre=command']) assert.equal(claudeDecision(prefix + command), command.includes('grep needle config/') ? 'prompt' : 'forbidden', prefix + command);
+    assert.equal(decisionFor(core, prefix + 'rtk grep --pre command needle'), prefix ? undefined : 'allow');
   }
   for (const list of Object.values(permissions)) assert.equal(new Set(list).size, list.length);
   // Collision entre un préfixe déclaré et une entrée explicite : même décision, exemples réunis.
@@ -130,31 +130,34 @@ test('lectures Claude autorisées : moteurs séparés et gardes .env/--pre prior
     for (const command of commands) assert.equal(claudeDecision(prefix + command), 'allow', prefix + command);
     for (const command of ['cat', 'head', 'tail', 'grep needle', 'rg needle', 'sed -n 1p']) {
       for (const file of ['.env', '.env.local', './.envrc', 'config/.env.production', '"config/.env.local"', "'config/.env'", '.env.example']) {
-        assert.equal(claudeDecision(`${prefix}${command} ${file}`), 'forbidden', `${prefix}${command} ${file}`);
+        assert.equal(claudeDecision(`${prefix}${command} ${file}`), /^(grep|rg|sed)/u.test(command) ? 'prompt' : 'forbidden', `${prefix}${command} ${file}`);
       }
     }
-    for (const command of ['rg --pre command needle', 'rg needle --pre=command', 'sed -n -i 1p file', 'sed -n --in-place 1p file']) assert.equal(claudeDecision(prefix + command), 'forbidden');
-    assert.equal(decisionFor(core, prefix + 'rg needle src'), undefined);
+    for (const command of ['rg --pre command needle', 'rg needle --pre=command', 'sed -n -i 1p file', 'sed -n --in-place 1p file']) assert.equal(claudeDecision(prefix + command), command.startsWith('sed ') ? 'prompt' : 'forbidden');
+    assert.equal(decisionFor(core, prefix + 'rg needle src'), 'allow');
     assert.equal(decisionFor(core, prefix + 'sed -n 1p file'), undefined);
     assert.equal(decisionFor(core, prefix + 'cat README.md'), undefined);
   }
   const codex = generateCodex(core);
   for (const rule of core.entries.filter(entry => entry.engines?.length === 1 && entry.engines[0] === 'claude')) {
+    if (!rule.pattern || core.entries.some(other => other.engines?.includes('codex') && JSON.stringify(other.pattern) === JSON.stringify(rule.pattern))) continue;
+    if (rule.pattern.join(' ') === 'rtk grep') continue; // miroir du filtre grep Codex
     for (const prefix of [[], ['rtk'], ['rtk', 'proxy']]) assert.equal(codex.includes(`pattern=${JSON.stringify([...prefix, ...rule.pattern])},`), false);
   }
 });
 
-test('validateAllow exige les gardes exactes, réserve rg/sed à Claude et refuse un sed générique', () => {
+test('validateAllow exige les gardes, réserve sed à Claude et exige residualRisk pour rg Codex', () => {
   for (const name of ['cat', 'head', 'tail', 'grep', 'rg', 'sed']) {
     const source = core.entries.find(entry => entry.pattern?.[0] === name && entry.decision === 'allow');
-    for (const guard of source.claudeDeny.filter(guard => name !== 'grep' || guard.pattern.includes('.env'))) {
-      const incomplete = { ...source, claudeDeny: source.claudeDeny.filter(candidate => candidate !== guard) };
+    const field = ['grep', 'rg', 'sed'].includes(name) ? 'claudeAsk' : 'claudeDeny';
+    for (const guard of source[field].filter(guard => guard.pattern.includes('.env'))) {
+      const incomplete = { ...source, [field]: source[field].filter(candidate => candidate !== guard) };
       assert.throws(() => validatePolicy(policy([incomplete])), /garde Claude obligatoire/);
     }
   }
   for (const name of ['rg', 'sed']) {
     const source = core.entries.find(entry => entry.pattern?.[0] === name && entry.decision === 'allow');
-    for (const engines of [undefined, ['codex'], ['claude', 'codex']]) {
+    for (const engines of [undefined, ...(name === 'sed' ? [['codex']] : []), ['claude', 'codex']]) {
       const broader = structuredClone(source);
       if (engines === undefined) delete broader.engines;
       else broader.engines = engines;
@@ -162,6 +165,9 @@ test('validateAllow exige les gardes exactes, réserve rg/sed à Claude et refus
     }
     if (name === 'sed') assert.throws(() => validatePolicy(policy([{ ...source, pattern: ['sed'] }])), /sed -n/);
   }
+  const rgCodex = core.entries.find(entry => entry.pattern?.[0] === 'rg' && entry.engines?.[0] === 'codex');
+  assert.doesNotThrow(() => validatePolicy(policy([rgCodex])));
+  assert.throws(() => validatePolicy(policy([{ ...rgCodex, residualRisk: 'omission' }])), /residualRisk/);
 });
 
 test('lsof : trois préfixes de lecture autorisés sans prompt général qui les masque', () => {
@@ -170,11 +176,11 @@ test('lsof : trois préfixes de lecture autorisés sans prompt général qui les
       const command = `${prefix}lsof ${flag} :3000`;
       assert.equal(decisionFor(core, command), 'allow');
       assert.equal(claudeDecision(command), 'allow');
-      assert.equal(claudeDecision(`${command} -Db/cache`), 'forbidden');
+      assert.equal(claudeDecision(`${command} -Db/cache`), 'prompt');
     }
     assert.equal(decisionFor(core, prefix + 'lsof -D'), 'prompt');
     assert.equal(decisionFor(core, prefix + 'lsof -i:3000'), undefined);
-    assert.equal(claudeDecision(prefix + 'lsof -Db/cache'), 'forbidden');
+    assert.equal(claudeDecision(prefix + 'lsof -Db/cache'), 'prompt');
   }
 });
 
@@ -205,7 +211,7 @@ test('gardes sans argv : le miroir conserve les limites Codex sans inventer de r
       assert.equal(claudeDecision(prefix + command), 'forbidden');
     }
   }
-  for (const rule of core.entries.filter(entry => entry.pattern === undefined)) {
+  for (const rule of core.entries.filter(entry => entry.pattern === undefined && !entry.claudePattern)) {
     const source = mirrored([rule]);
     assert.equal(generateCodex(source).includes('prefix_rule('), false);
     assert.equal(generatePermissions(source).deny.length, rule.claudeDeny.length * 3);

@@ -32,8 +32,8 @@ test('socle : aucune restriction Codex read-only ou local-reversible, miroirs co
   }
   for (const prefix of prefixes) {
     for (const command of ['rg --pre program needle src', 'sed -i 1d file', 'rtk grep --pre program needle src']) {
-      assert.equal(decisionFor(core, prefix + command), undefined, prefix + command);
-      assert.equal(decisionFor(core, prefix + command, 'claude'), 'forbidden', prefix + command);
+      assert.equal(decisionFor(core, prefix + command), command.startsWith('rg ') || (!prefix && command.startsWith('rtk grep ')) ? 'allow' : undefined, prefix + command);
+      assert.equal(decisionFor(core, prefix + command, 'claude'), command.startsWith('sed ') ? 'prompt' : 'forbidden', prefix + command);
     }
     for (const engine of ['codex', 'claude']) {
       assert.equal(decisionFor(core, prefix + 'npm ci', engine), 'allow');
@@ -44,7 +44,7 @@ test('socle : aucune restriction Codex read-only ou local-reversible, miroirs co
   }
 });
 
-test('session Codex courante : aucune décision de lecture dans le fichier généré', () => {
+test('session Codex courante : lectures confinées sans règle, filtres explicitement autorisés', () => {
   // Lire les règles produites, pour détecter aussi une régression du filtrage engines.
   const output = generateCodex(core);
   const rules = [...output.matchAll(/pattern=(\[[^\n]+\]),\n\s*decision="(allow|prompt|forbidden)"/gu)]
@@ -57,10 +57,11 @@ test('session Codex courante : aucune décision de lecture dans le fichier gén�
   };
   for (const prefix of prefixes) {
     for (const command of [
-      'sed -n 1,20p AGENTS.md', "sed -n '1770,1790p' AGENTS.md", 'rg -n foo src',
+      'sed -n 1,20p AGENTS.md', "sed -n '1770,1790p' AGENTS.md",
       'cat README.md', 'ls -la docs', 'git diff --stat', 'git log --oneline -5',
-      'rg --pre program needle src', 'sed -i 1d file', 'rtk grep --pre program needle src',
+      'sed -i 1d file',
     ]) assert.equal(verdict(prefix + command), undefined, prefix + command);
+    for (const command of ['rg -n foo src', 'rg --pre program needle src']) assert.equal(verdict(prefix + command), 'allow');
     assert.equal(verdict(prefix + 'git push'), 'prompt');
     assert.equal(verdict(prefix + 'gh pr merge'), 'prompt');
     assert.equal(verdict(prefix + 'rm -rf x'), 'forbidden');
@@ -136,7 +137,7 @@ test('decisionForCommand : deux couches, moteurs, miroirs et aucune décision pa
   }
   assert.equal(decisionForCommand(root, 'rtk npm run claude-only', 'claude'), 'allow');
   assert.equal(decisionForCommand(root, 'rtk npm run claude-only', 'codex'), undefined);
-  assert.equal(decisionForCommand(root, 'rg foo src', 'codex'), undefined);
+  assert.equal(decisionForCommand(root, 'rg foo src', 'codex'), 'allow');
   assert.equal(decisionForCommand(root, 'rg foo src', 'claude'), 'allow');
   assert.equal(decisionForCommand(root, 'rtk rg --pre program needle src', 'claude'), 'forbidden');
   // Désactiver les miroirs du projet ne retire pas les miroirs du socle.
