@@ -134,6 +134,15 @@ argument libre, autorisé nommément. Pour le niveau `prompt`, la garde vit auss
     Refuser dans `validatePolicy` et dans le schéma toute entrée `prompt` ou `forbidden`
     portant `read-only` ou `local-reversible`, et toute entrée `allow` portant une classe de
     refus. Conserver toutes les décisions du socle. (DoD 17, 18)
+12. **Rejeu des conteneurs JavaScript Codex** — extraire par analyse lexicale seule chaque
+    commande littérale passée à `tools.exec_command`, `tools.shell` ou `tools.shell_command`
+    dans un `custom_tool_call` nommé `exec` ou `functions.exec`. Accepter les clés `cmd` et
+    `command`, citées ou non, et les chaînes simples, doubles ou gabarits sans interpolation ;
+    rejouer chaque commande comme un appel Codex ordinaire, y compris plusieurs appels dans
+    un même conteneur. Compter séparément les valeurs non littérales et les conteneurs sans
+    commande littérale, par cause, sans exécuter leur contenu ni afficher d’argument.
+    Utiliser exclusivement des historiques synthétiques pour les tests, sans modifier le
+    socle ni les règles générées. (DoD 19, 20, 21)
 
 ### Format de délégation visé par l'item 7
 
@@ -187,6 +196,11 @@ Le contrat `agentTaskSchema` du harness reste la cible du rendu côté Mastra : 
     vocabulaire fixe, et n'affiche toujours aucun argument ni commande intégrale.
 17. Toute entrée prompt ou forbidden du socle porte une des six classes de refus.
 18. Une politique qui enfreint cette règle est refusée à la validation, avant toute écriture.
+19. Une commande littérale d'un conteneur JavaScript Codex reçoit le même verdict que la même
+    commande hors conteneur.
+20. Le rejeu n'évalue ni n'exécute jamais le contenu d'un conteneur, et n'affiche toujours aucun
+    argument ni commande intégrale.
+21. Les conteneurs sans commande littérale restent comptés séparément, ventilés par cause.
 
 ## 7. Décisions d'outillage (actées le 2026-09-19) et limite connue
 

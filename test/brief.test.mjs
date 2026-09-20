@@ -283,6 +283,6 @@ test('l’exemple README rend l’item 7 et la DoD 9 du plan repris à l’ident
   assert.equal(result.status, 0, result.stderr);
   assert.ok(result.stdout.includes(brief.planStep.text));
   assert.ok(result.stdout.includes(brief.dod[0].text));
-  assert.deepEqual([...planPassages(sourcePlan, brief.plan.itemSection).keys()], ['1', '2', '5', '6', '7', '8', '9', '10', '11']);
-  assert.deepEqual([...planPassages(sourcePlan, brief.plan.dodSection).keys()], ['1', '2', '3', '4', '6', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18']);
+  assert.deepEqual([...planPassages(sourcePlan, brief.plan.itemSection).keys()], ['1', '2', '5', '6', '7', '8', '9', '10', '11', '12']);
+  assert.deepEqual([...planPassages(sourcePlan, brief.plan.dodSection).keys()], ['1', '2', '3', '4', '6', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21']);
 });
