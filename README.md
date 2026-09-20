@@ -190,6 +190,26 @@ redirections, etc., avec les formes RTK et les changements de répertoire simple
 externes restent possibles ; `/dev/null` et les duplications de descripteurs sont admis.
 Comme dans CoproOS, le code inline et les mutations globales Git/npm sont refusés.
 
+Le garde laisse passer `lsof -ti :9323 | xargs kill -9`, y compris avec
+`2>/dev/null` : arrêter un processus ne constitue pas une écriture hors worktree.
+Sous `xargs`, seules les options exactes `-0`, `--null`, `-r`, `--no-run-if-empty`,
+`-t`, `--verbose`, `-n N`, `-L N`, `-P N`, `-s N`, `-E chaîne` et `-x` sont admises.
+Les valeurs sont des arguments séparés ; N est un entier positif (zéro admis pour `-P`).
+Une valeur `-E` portant une expansion non résolue (variable, glob, accolades…) est opaque.
+`--` est accepté uniquement avant un programme explicite qui ne commence pas par `-`.
+Toute option inconnue, abréviation ou forme collée, ainsi que `-J`, `-I`, `-i` et
+`--replace`, reste opaque et refusée. Un nom de programme vide, dynamique ou contenant
+`{` ou `}` est refusé. Les substitutions peuvent toucher le nom du programme :
+`-J` sur macOS et `-I` sur GNU, d’où leur exclusion complète.
+
+Le programme nommé et ses arguments visibles passent ensuite les contrôles ordinaires
+du garde. Les mutations de fichiers, interpréteurs et lanceurs restent refusés sous
+`xargs`, même avec des chemins visibles locaux : leurs arguments issus de stdin sont
+inconnus. Cela inclut rm, mv, cp, tee, sh, bash, node, python, npm, RTK, env, sed/awk
+et xargs imbriqué. Les redirections et les autres segments gardent leurs contrôles.
+Le garde n’exécute ni xargs ni la commande analysée ; le test CoproOS original est
+également rejoué contre sa copie déposée dans un dépôt temporaire interne aux tests.
+
 **Limites : ce hook est un contrôle préalable, pas un sandbox système.** Son analyse shell
 est conservatrice : substitutions, heredocs, structures complexes, chemins dynamiques et
 wrappers opaques peuvent être refusés. Elle ne prouve pas les effets de tous les programmes

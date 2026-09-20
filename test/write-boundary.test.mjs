@@ -38,6 +38,86 @@ test('garde autonome : reprise des cas CoproOS, sans exécuter les commandes', t
   assert.equal(run(root, 'Write', { file_path: path.join(root, 'external/blocked.json') }).status, 2);
 });
 
+test('test original CoproOS inchangé exécuté contre le garde déposé, dans un dépôt temporaire', t => {
+  const root = temporary(t);
+  initProject(root);
+  // Copie exacte de scripts/__tests__/claude-worktree-write-guard.spec.mjs,
+  // lue dans CoproOS le 2026-09-21 ; aucun accès à CoproOS pendant les tests.
+  const spec = 'scripts/__tests__/claude-worktree-write-guard.spec.mjs';
+  put(root, spec, fs.readFileSync(path.join(ROOT, 'test/fixtures/coproos-write-guard.spec.mjs'), 'utf8'));
+  const result = spawnSync(process.execPath, [spec], { cwd: root, encoding: 'utf8', timeout: 15000, env: { PATH: root } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /boundary verified/);
+});
+
+test('xargs : libération de port et liste fermée d’options simples', t => {
+  const root = temporary(t);
+  initProject(root);
+  bash(root, 'lsof -ti :9323 | xargs kill -9', 0);
+  bash(root, 'lsof -ti :3000 | xargs kill -9 2>/dev/null', 0);
+  for (const options of [
+    '-0', '--null', '-r', '--no-run-if-empty', '-t', '--verbose', '-x',
+    '-n 1', '-L 2', '-P 0', '-P 4', '-s 1024', '-E STOP', '-E ""', '-E "END OF INPUT"', '-E -I',
+    '-0 -r -t -n 2 -L 1 -P 0 -s 4096 -E STOP -x', '--', '-0 --',
+  ]) bash(root, `lsof -ti :3000 | xargs ${options} kill -9`, 0);
+  bash(root, 'printf x | xargs cat', 0);
+  bash(root, 'printf x | xargs git status --short', 0);
+  bash(root, 'printf x | rtk proxy xargs -n 1 kill -9', 0);
+});
+
+test('xargs : mutations, interpréteurs et lanceurs restent refusés même avec chemins locaux', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const command of [
+    'find . -name x | xargs rm', 'printf x | xargs sh -c "rm -rf src"',
+    'printf x | xargs -I{} cp {} /tmp',
+    ...['rm', 'mv', 'cp', 'tee', 'touch', 'mkdir', 'ln', 'dd', 'rsync', 'chmod', 'chown',
+      'sh', 'bash', 'zsh', 'node', 'python', 'python3', 'perl', 'ruby', 'php', 'npx', 'tsx',
+      'npm', 'yarn', 'pnpm', 'bun', 'deno', 'awk', 'sed', 'source', '.', 'cd', 'xargs'].map(program => `printf x | xargs -0 -n 1 ${program}`),
+    'printf x | xargs env rm', 'printf x | xargs command rm', 'printf x | xargs sudo rm',
+    'printf x | xargs rtk proxy rm', 'printf x | xargs timeout 1 rm',
+    'printf x | xargs git add src', 'printf x | xargs sort -o local.txt',
+    'printf x | xargs find . -delete', 'printf x | xargs /bin/rm',
+    'printf x | xargs ./scripts/tool.sh', 'printf x | rtk xargs -n 1 cp a b',
+  ]) bash(root, command, 2);
+});
+
+test('xargs : remplacement, options inconnues ou incomplètes et programme dynamique sont opaques', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const options of [
+    '-J {}', '-J{}', '-I {}', '-I{}', '-i', '-i{}', '--replace', '--replace={}', '--replace {}',
+    '-n1', '-L1', '-P2', '-s1024', '-ESTOP', '-0r', '--max-args=1', '--max-args 1',
+    '--nul', '-a file', '--arg-file=file', '-d ,', '-p', '--help', '--version', '--process-slot-var=PATH',
+    '-n zero', '-n -1', '-n 0', '-L 0', '-P -1', '-s 0', '-n 1.5',
+    '-E $FLAGS', '-E *', '-E {STOP,rm}',
+    '-- -I{}', '-- --null', '-- --',
+  ]) bash(root, `printf x | xargs ${options} kill -9`, 2);
+  for (const suffix of ['', '-n', '-L', '-P', '-s', '-E', '-E STOP', '--', '{}', 'ki{ll', 'kill}', '""', '"$PROGRAM"']) {
+    bash(root, `printf x | xargs ${suffix}`, 2);
+  }
+  bash(root, 'echo ls | xargs -I{} {}', 2);
+  // Essai macOS ayant établi l’arbitrage -J : le hook analyse le texte seul.
+  // Aucun xargs ni printf de cette commande n’est exécuté par ce test.
+  const replacement = "printf '%s\\n' /usr/bin/printf | xargs -J /usr/bin/false /usr/bin/false '%s\\n' XARGS_PROGRAM_REPLACED";
+  bash(root, replacement, 2);
+  bash(root, replacement.replace('| xargs ', '| /usr/bin/xargs '), 2);
+});
+
+test('xargs ne contourne ni redirections externes ni refus des autres segments', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const command of [
+    'lsof -ti :3000 | xargs kill -9 > ../report.txt',
+    'lsof -ti :3000 | xargs kill -9 2> /tmp/report.txt',
+    'lsof -ti :3000 | xargs kill -9 && touch ../report.txt',
+    'node ../script.mjs | xargs kill -9',
+    'printf x | xargs /tmp/kill -9', 'printf x | xargs "$(echo kill)" -9',
+  ]) bash(root, command, 2);
+  bash(root, 'lsof -ti :3000 | xargs -- kill -9 2>&1', 0);
+  bash(root, 'cd .. && lsof -ti :3000 | xargs kill -9', 0);
+});
+
 test('Write/Edit/MultiEdit : créations, modifications, traversées, symlinks et cwd', t => {
   const root = temporary(t);
   const outside = temporary(t);
