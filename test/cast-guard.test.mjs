@@ -16,14 +16,16 @@ function git(root, ...args) {
     cwd: root, stdio: 'ignore', env: { ...process.env, ...GIT_ENV },
   });
 }
-function repository(t, { typescript = true } = {}) {
+function repository(t, { typescript = true, history = 'commit' } = {}) {
   assert.equal(fs.existsSync(path.join(TYPESCRIPT, 'package.json')), true, 'TypeScript absent : lancer npm ci');
   const root = temporary(t);
   initProject(root);
   put(root, 'src/existing.ts', 'type Foo = { a: number };\nexport const y: unknown = 1;\nexport const x = y as Foo;\n');
-  git(root, 'init', '--initial-branch=main');
-  git(root, 'add', '.');
-  git(root, 'commit', '-m', 'fixture');
+  if (history !== 'none') git(root, 'init', '--initial-branch=main');
+  if (history === 'commit') {
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'fixture');
+  }
   if (typescript) {
     fs.mkdirSync(path.join(root, 'node_modules'));
     fs.symlinkSync(TYPESCRIPT, path.join(root, 'node_modules/typescript'), 'dir');
@@ -35,7 +37,8 @@ function write(root, relative, content, tool = 'Edit') {
   return spawnSync(process.execPath, [path.join(root, CAST_GUARD_FILE)], {
     cwd: root, encoding: 'utf8', timeout: 30000,
     input: JSON.stringify({ hook_event_name: 'PostToolUse', cwd: root, tool_name: tool, tool_input: { file_path: path.join(root, relative) }, tool_response: {} }),
-    env: { PATH: process.env.PATH, CLAUDE_PROJECT_DIR: root, ...GIT_ENV },
+    // Le dépôt de test vit sous ce checkout : Git ne doit pas remonter jusqu'à lui.
+    env: { PATH: process.env.PATH, CLAUDE_PROJECT_DIR: root, GIT_CEILING_DIRECTORIES: path.dirname(root), ...GIT_ENV },
   });
 }
 const existing = 'type Foo = { a: number };\nexport const y: unknown = 1;\nexport const x = y as Foo;\n';
@@ -110,11 +113,33 @@ test('cast commité devenu la référence ; hors src, autres extensions et autre
   assert.equal(read.status, 0);
 });
 
-test('dépôt sans TypeScript : garde inactive', t => {
-  const root = repository(t, { typescript: false });
-  const result = write(root, 'src/existing.ts', `${existing}export const w = y as Foo;\n`);
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stderr, '');
+test('dépôt sans TypeScript, sans Git ou sans commit : garde inactive', t => {
+  for (const options of [{ typescript: false }, { history: 'none' }, { history: 'init' }]) {
+    const root = repository(t, options);
+    const result = write(root, 'src/existing.ts', `${existing}export const w = y as Foo;\n`);
+    assert.equal(result.status, 0, `${JSON.stringify(options)} : ${result.stderr}`);
+    assert.equal(result.stderr, '');
+  }
+});
+
+test('renommage indexé (git mv) : comparé à l’ancien chemin', t => {
+  const root = repository(t);
+  git(root, 'mv', 'src/existing.ts', 'src/moved.ts');
+  assert.equal(write(root, 'src/moved.ts', `${existing}export const z = 2;\n`).status, 0);
+  const added = write(root, 'src/moved.ts', `${existing}export const w = y as Foo;\n`);
+  assert.equal(added.status, 2);
+  assert.match(added.stderr, /src\/moved\.ts : 2 assertion\(s\) de type contre 1 dans HEAD/u);
+  assert.match(added.stderr, /ligne 4 : y as Foo/u);
+});
+
+test('.mts et .cts contrôlés comme .ts', t => {
+  const root = repository(t);
+  for (const relative of ['src/module.mts', 'src/common.cts']) {
+    const result = write(root, relative, 'export const a: unknown = 1;\nexport const b = a as number;\n', 'Write');
+    assert.equal(result.status, 2, relative);
+    assert.match(result.stderr, /ligne 2 : a as number/u);
+    assert.equal(write(root, relative, 'export const a = [1] as const;\n', 'Write').status, 0, relative);
+  }
 });
 
 test('entrée opaque refusée ; init déclare la garde en PostToolUse et dépose une copie autonome', t => {

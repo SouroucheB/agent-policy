@@ -30,8 +30,8 @@ test('retrait git -C : seules 66 allow et 927 ask sont retirées, Codex inchang�
   // La seconde conserve toutes les permissions hors git -C, gardes et ordre compris.
   const sha256 = value => createHash('sha256').update(value).digest('hex');
   // Les refus .env Codex du lot A s'ajoutent en fin de socle ; le reste est inchangé.
-  const withoutEnvRefusals = { ...core, entries: core.entries.filter(entry => !entry.pattern?.some(token => /^(?:--env-file=)?\.env(?:\.local)?$/u.test(token))) };
-  assert.equal(core.entries.length - withoutEnvRefusals.entries.length, 12);
+  const withoutEnvRefusals = { ...core, entries: core.entries.filter(entry => !entry.pattern?.flat().some(token => /^(?:--env-file=)?(?:\.\/)?\.env/u.test(token))) };
+  assert.equal(core.entries.length - withoutEnvRefusals.entries.length, 6);
   // L'empreinte date de la v1.3.0 : seul l'en-tête porte la version de livraison.
   const rules = generateCodex(withoutEnvRefusals).replace(/^# Généré par agent-policy v[0-9.]+\./u, '# Généré par agent-policy v1.3.0.');
   assert.equal(sha256(rules), 'd50d02b1cecb536e694dcf7ff8a7f27a5e5fa877347035824cceba7ef6b97ea8');

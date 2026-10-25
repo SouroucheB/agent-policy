@@ -4,22 +4,22 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { initProject, readCore } from '../lib/system.mjs';
-import { decisionFor, generateCodex, PROJECT_FILES } from '../lib/generate.mjs';
+import { decisionFor, generateCodex, validatePolicy, validateExamples, PROJECT_FILES } from '../lib/generate.mjs';
 import {
   ENV_GUARD_FILE, ENV_GUARD_HOOK, CURSOR_HOOKS, CURSOR_HOOKS_FILE,
   generateCursorHooks, assertCursorHooksPostcondition,
 } from '../lib/hooks.mjs';
-import { temporary, put } from './helpers.mjs';
+import { temporary, put, policy } from './helpers.mjs';
 
 const WRAPPERS = ['./scripts/with-env.sh', './scripts/with-supabase-env.sh'];
 const PRIVATE_LINE = 'PRIVATE_FIXTURE=never-printed';
 function project(t, { wrappers = WRAPPERS } = {}) {
   const root = temporary(t);
   initProject(root);
-  put(root, PROJECT_FILES.tools, { version: 1, envWrappers: wrappers, worktree: { privateFiles: [], install: [], notes: [] } });
+  put(root, PROJECT_FILES.tools, { version: 1, envWrappers: wrappers, pluginScripts: [], worktree: { privateFiles: [], install: [], notes: [] } });
   // Fichiers inertes : la garde ne doit ni les lire ni afficher leur contenu.
   for (const name of ['.env', '.env.local', 'config/.env.production']) put(root, name, `${PRIVATE_LINE}\n`);
-  for (const name of ['src/lib/env.ts', 'scripts/ci-write-local-env.sh', 'report.env.integration.md']) put(root, name, 'x\n');
+  for (const name of ['src/lib/env.ts', 'scripts/ci-write-local-env.sh', 'report.env.integration.md', '.env.example']) put(root, name, 'x\n');
   return root;
 }
 function guard(root, payload, env = {}) {
@@ -49,6 +49,10 @@ test('Claude : lectures, recherches et chargements .env refusés avec renvoi aux
     'npx tsx --env-file=.env.local script.ts', 'source .env', '. .env.local', 'cat < .env', 'cat ".env"', "cat '.env.local'",
     'cat .e""nv', 'cat \\.env', 'cat .env*', 'cat .e*', 'cat .*', 'ls .[e]nv', 'cp .env /tmp/copy', 'echo "$(cat .env)"',
     'rtk proxy cat .env', 'git show HEAD:.env', 'cat {.env,README.md}', 'KEY=.env npm run dev', 'cat "$HOME/.env"',
+    // Motif et message exemptés, mais pas les chemins voisins ni les fichiers de motifs.
+    'rg KEY .env', 'rg -g ".env*" KEY', 'grep KEY < .env', 'grep -e X .env', 'rg -f .env src', 'grep -rn KEY -- .env',
+    'git grep KEY -- .env', 'git commit -F .env', 'git commit -m message .env', 'git log -m .env', 'gh pr create --body-file .env',
+    'cat .env.example.local', 'ls .env.*', 'git commit -m "$(cat .env)"',
   ]) assert.equal(bash(root, command).status, 2, command);
   for (const input of [{ pattern: 'KEY', path: '.env' }, { pattern: 'KEY', glob: '**/.env*' }, { pattern: 'KEY', glob: '.e*' }]) {
     assert.equal(claude(root, 'Grep', input).status, 2, JSON.stringify(input));
@@ -61,8 +65,13 @@ test('Claude : wrappers, scripts npm et fichiers voisins de .env passent', t => 
     './scripts/with-env.sh npx tsx scripts/check.ts', './scripts/with-supabase-env.sh npm run db:types', 'npm run dev',
     'cat src/lib/env.ts', 'bash scripts/ci-write-local-env.sh', 'cat report.env.integration.md', 'cat .envrc',
     'rm -rf .next/cache', 'git add .', 'ls .venv/bin', 'rg -n envWrappers agent-policy', 'cd .. && ls',
+    // Modèles .example, messages de commit ou de PR et motifs de recherche ne sont pas des lectures.
+    'cat .env.example', 'cp .env.example .agent-tmp/env-model', 'cat config/.env.local.example',
+    'git commit -m "chore: ignorer .env"', "git commit -am 'garde .env.local'", 'git commit --message="voir .env"',
+    'git tag -a v1 -m "refus .env"', 'gh pr create --title "Garde .env" --body "lecture de .env refusée"',
+    "rg -n '\\.env' .gitignore", 'grep -rn ".env" docs', "rg -e '.env' src", 'git grep -n .env -- src', 'rg -A 2 .env README.md',
   ]) assert.equal(bash(root, command).status, 0, command);
-  for (const file_path of ['src/lib/env.ts', 'scripts/ci-write-local-env.sh', 'report.env.integration.md', 'src/app/[id]/page.tsx']) {
+  for (const file_path of ['src/lib/env.ts', 'scripts/ci-write-local-env.sh', 'report.env.integration.md', 'src/app/[id]/page.tsx', '.env.example']) {
     assert.equal(claude(root, 'Read', { file_path }).status, 0, file_path);
   }
   assert.equal(claude(root, 'Grep', { pattern: 'KEY', path: 'src', glob: '*.ts' }).status, 0);
@@ -107,6 +116,9 @@ test('Cursor : beforeReadFile, beforeShellExecution et preToolUse Grep réponden
   }
   assert.equal(cursor({ hook_event_name: 'preToolUse', tool_name: 'Grep', tool_input: { pattern: 'KEY', path: '.env' } }).permission, 'deny');
   assert.equal(cursor({ hook_event_name: 'preToolUse', tool_name: 'Grep', tool_input: { pattern: 'TODO', path: 'src' } }).permission, 'allow');
+  assert.equal(cursor({ hook_event_name: 'preToolUse', tool_name: 'Grep', tool_input: { pattern: '\\.env', path: 'src' } }).permission, 'allow');
+  assert.equal(cursor({ hook_event_name: 'preToolUse', tool_name: 'Grep', tool_input: { pattern: 'KEY', glob: '.env*' } }).permission, 'deny');
+  assert.equal(cursor({ hook_event_name: 'beforeShellExecution', command: 'git commit -m "ignorer .env"', cwd: root }).permission, 'allow');
   // Hook Claude chargé par Cursor : code 2 pour refuser, réponse Cursor pour autoriser.
   const imported = guard(root, { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'npm run dev' } }, { CURSOR_VERSION: '2.0.0' });
   assert.equal(imported.status, 0);
@@ -175,7 +187,20 @@ test('hooks Cursor : forme ancienne normalisée, post-condition et refus avant �
     mutate(changed);
     assert.throws(() => assertCursorHooksPostcondition(before, JSON.stringify(changed)), /Post-condition Cursor hook/);
   }
-  for (const text of ['{broken', '{"hooks":{}}', '{"version":2,"hooks":{}}', '{"version":1,"hooks":[]}', '{"version":1,"hooks":{"preToolUse":{}}}']) {
+  // Sans version, le fichier est complété ; une autre version ou une forme invalide échoue avant écriture.
+  for (const text of ['{"hooks":{"stop":[{"command":"notify"}]}}\n', '{}']) {
+    const root = temporary(t);
+    put(root, CURSOR_HOOKS_FILE, text);
+    initProject(root);
+    const after = fs.readFileSync(path.join(root, CURSOR_HOOKS_FILE), 'utf8');
+    assertCursorHooksPostcondition(text, after);
+    assert.deepEqual(Object.keys(JSON.parse(after)), ['version', 'hooks']);
+    assert.equal(JSON.parse(after).version, 1);
+    assert.deepEqual(JSON.parse(after).hooks.stop, JSON.parse(text).hooks?.stop);
+    initProject(root);
+    assert.equal(fs.readFileSync(path.join(root, CURSOR_HOOKS_FILE), 'utf8'), after);
+  }
+  for (const text of ['{broken', '{"version":2,"hooks":{}}', '{"version":null}', '{"version":1,"hooks":[]}', '{"version":1,"hooks":{"preToolUse":{}}}']) {
     const root = temporary(t);
     put(root, CURSOR_HOOKS_FILE, text);
     assert.throws(() => initProject(root));
@@ -190,23 +215,41 @@ test('Codex : les règles générées refusent la lecture et le chargement de .e
   const rules = generateCodex(core);
   for (const prefix of ['', 'rtk ', 'rtk proxy ']) {
     for (const command of [
-      'cat .env', 'cat .env.local', 'cat .env README.md', 'head .env', 'tail .env.local', 'source .env', 'source .env.local',
-      '. .env', '. .env.local', 'node --env-file=.env server.mjs', 'node --env-file=.env.local server.mjs', 'npx tsx --env-file=.env script.ts',
-    ]) {
-      assert.equal(decisionFor(core, prefix + command, 'codex'), 'forbidden', prefix + command);
-      assert.notEqual(decisionFor(core, prefix + command, 'codex'), 'allow');
-    }
-    for (const command of ['cat src/lib/env.ts', 'cat scripts/ci-write-local-env.sh', 'cat .envrc']) {
+      'cat .env', 'cat .env.local', 'cat .env README.md', 'cat ./.env', 'cat .env.production', 'cat ./.env.development.local',
+      'head .env', 'tail .env.local', 'tail ./.env.test', 'source .env', 'source ./.env.local', '. .env', '. .env.production',
+      'node --env-file=.env server.mjs', 'node --env-file=./.env.local server.mjs', 'npx tsx --env-file=.env script.ts',
+    ]) assert.equal(decisionFor(core, prefix + command, 'codex'), 'forbidden', prefix + command);
+    for (const command of ['cat src/lib/env.ts', 'cat scripts/ci-write-local-env.sh', 'cat .envrc', 'cat .env.example']) {
       assert.equal(decisionFor(core, prefix + command, 'codex'), 'allow', prefix + command);
     }
-    // Limites des préfixes, documentées dans residualRisk : le fichier .env en position libre.
-    for (const command of ['grep X .env', 'cat -n .env']) assert.equal(decisionFor(core, prefix + command, 'codex'), 'allow', prefix + command);
+    // Limites des préfixes, écrites dans residualRisk : position libre, autre suffixe, autre dossier.
+    for (const command of ['grep X .env', 'cat -n .env', 'cat .env.staging', 'cat config/.env']) {
+      assert.equal(decisionFor(core, prefix + command, 'codex'), 'allow', prefix + command);
+    }
   }
-  assert.match(rules, /pattern=\["cat",".env"\],\n {4}decision="forbidden"/u);
-  assert.match(rules, /pattern=\["rtk","proxy","node","--env-file=.env"\],\n {4}decision="forbidden"/u);
-  for (const entry of core.entries.filter(value => value.pattern?.some(token => /^(?:--env-file=)?\.env/u.test(token)))) {
+  assert.match(rules, /pattern=\["cat",\["\.env","\.env\.local",[^\n]*"\.\/\.env\.production"[^\n]*\]\],\n {4}decision="forbidden"/u);
+  assert.match(rules, /pattern=\["rtk","proxy","node",\["--env-file=\.env",[^\n]*\]\],\n {4}decision="forbidden"/u);
+  const refusals = core.entries.filter(value => value.pattern?.flat().some(token => /^(?:--env-file=)?(?:\.\/)?\.env/u.test(token)));
+  assert.deepEqual(refusals.map(entry => entry.pattern[0]), ['cat', 'head', 'tail', 'source', '.', 'node']);
+  for (const entry of refusals) {
     assert.deepEqual(entry.engines, ['codex']);
     assert.equal(entry.riskClass, 'shared-local-state');
-    assert.match(entry.residualRisk, /garde \.env de Claude et de Cursor/u);
+    for (const limit of [/\.env\.staging/u, /config\/\.env/u, /cat -n \.env/u, /\.env\.example/u, /garde \.env de Claude et de Cursor/u]) assert.match(entry.residualRisk, limit);
   }
+});
+
+test('alternatives de motif : réservées aux refus Codex, jamais en préfixe ni en allow', () => {
+  const union = (overrides = {}) => ({
+    pattern: ['cat', ['.env', '.env.local']], engines: ['codex'], decision: 'forbidden', riskClass: 'shared-local-state',
+    justification: 'Lecture refusée.', match: ['cat .env.local'], notMatch: ['cat README.md'], ...overrides,
+  });
+  assert.doesNotThrow(() => validateExamples(policy([union()])));
+  assert.equal(decisionFor(policy([union()]), 'cat .env.local'), 'forbidden');
+  assert.match(generateCodex(policy([union()])), /pattern=\["cat",\["\.env","\.env\.local"\]\]/u);
+  for (const invalid of [
+    (({ engines, ...bothEngines }) => bothEngines)(union()), union({ engines: ['claude'] }), union({ engines: ['codex', 'claude'] }),
+    union({ decision: 'allow', riskClass: 'read-only' }), union({ pattern: ['cat', ['.env']] }),
+    union({ pattern: ['cat', ['.env', '.env']] }), union({ pattern: ['cat', ['.env', 'a b']] }), union({ pattern: ['cat', [['.env', 'x']]] }),
+  ]) assert.throws(() => validatePolicy(policy([invalid])), JSON.stringify(invalid.pattern));
+  assert.throws(() => validatePolicy({ version: 1, commandPrefixes: [['rtk', ['proxy', 'x']]], entries: [] }), /commandPrefixes/u);
 });

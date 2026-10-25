@@ -9015,7 +9015,7 @@
         "head g",
         "cat-other g"
       ],
-      "residualRisk": "cat .env et cat .env.local sont refusés par des règles forbidden plus strictes ; une option ou un autre fichier placé avant .env (cat -n .env, cat a .env) n’est pas filtré par préfixe, risque accepté par le user. Une règle allow autorise la sortie du sandbox. Les gardes .env Claude sont conservées et ne s’appliquent pas à Codex ; RTK et sa configuration sont supposés de confiance."
+      "residualRisk": "Les fichiers .env courants (.env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./) placés juste après cat sont refusés par une règle forbidden plus stricte ; une option ou un autre fichier placé avant .env (cat -n .env, cat a .env) n’est pas filtré par préfixe, risque accepté par le user. Une règle allow autorise la sortie du sandbox. Les gardes .env Claude sont conservées et ne s’appliquent pas à Codex ; RTK et sa configuration sont supposés de confiance."
     },
     {
       "pattern": [
@@ -9041,7 +9041,24 @@
     {
       "pattern": [
         "cat",
-        ".env"
+        [
+          ".env",
+          ".env.local",
+          ".env.development",
+          ".env.development.local",
+          ".env.production",
+          ".env.production.local",
+          ".env.test",
+          ".env.test.local",
+          "./.env",
+          "./.env.local",
+          "./.env.development",
+          "./.env.development.local",
+          "./.env.production",
+          "./.env.production.local",
+          "./.env.test",
+          "./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9051,38 +9068,38 @@
       "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
       "match": [
         "cat .env",
-        "cat .env README.md"
+        "cat ./.env",
+        "cat .env.production README.md",
+        "cat ./.env.test.local"
       ],
       "notMatch": [
-        "cat .envrc",
-        "cat src/lib/env.ts"
+        "cat .env.example",
+        "cat src/lib/env.ts",
+        "cat .envrc"
       ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; cat -n .env, cat a .env et les lectures grep, rg ou sed restent couvertes par leurs allow. La garde .env de Claude et de Cursor n’a pas cette limite."
-    },
-    {
-      "pattern": [
-        "cat",
-        ".env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        "cat .env.local"
-      ],
-      "notMatch": [
-        "cat .env",
-        "cat scripts/ci-write-local-env.sh"
-      ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; cat -n .env.local, cat a .env.local et les lectures grep, rg ou sed restent couvertes par leurs allow. La garde .env de Claude et de Cursor n’a pas cette limite."
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites."
     },
     {
       "pattern": [
         "head",
-        ".env"
+        [
+          ".env",
+          ".env.local",
+          ".env.development",
+          ".env.development.local",
+          ".env.production",
+          ".env.production.local",
+          ".env.test",
+          ".env.test.local",
+          "./.env",
+          "./.env.local",
+          "./.env.development",
+          "./.env.development.local",
+          "./.env.production",
+          "./.env.production.local",
+          "./.env.test",
+          "./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9091,38 +9108,39 @@
       "riskClass": "shared-local-state",
       "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
       "match": [
-        "head .env"
-      ],
-      "notMatch": [
-        "head .envrc",
-        "head src/lib/env.ts"
-      ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; head -n 5 .env reste couvert par l’allow head. La garde .env de Claude et de Cursor n’a pas cette limite."
-    },
-    {
-      "pattern": [
-        "head",
-        ".env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        "head .env.local"
-      ],
-      "notMatch": [
         "head .env",
-        "head scripts/ci-write-local-env.sh"
+        "head ./.env",
+        "head .env.production README.md",
+        "head ./.env.test.local"
       ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; head -n 5 .env.local reste couvert par l’allow head. La garde .env de Claude et de Cursor n’a pas cette limite."
+      "notMatch": [
+        "head .env.example",
+        "head src/lib/env.ts",
+        "head .envrc"
+      ],
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites."
     },
     {
       "pattern": [
         "tail",
-        ".env"
+        [
+          ".env",
+          ".env.local",
+          ".env.development",
+          ".env.development.local",
+          ".env.production",
+          ".env.production.local",
+          ".env.test",
+          ".env.test.local",
+          "./.env",
+          "./.env.local",
+          "./.env.development",
+          "./.env.development.local",
+          "./.env.production",
+          "./.env.production.local",
+          "./.env.test",
+          "./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9131,38 +9149,39 @@
       "riskClass": "shared-local-state",
       "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
       "match": [
-        "tail .env"
-      ],
-      "notMatch": [
-        "tail .envrc",
-        "tail src/lib/env.ts"
-      ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; tail -n 5 .env reste couvert par l’allow tail. La garde .env de Claude et de Cursor n’a pas cette limite."
-    },
-    {
-      "pattern": [
-        "tail",
-        ".env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Lecture d’un fichier .env refusée ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        "tail .env.local"
-      ],
-      "notMatch": [
         "tail .env",
-        "tail scripts/ci-write-local-env.sh"
+        "tail ./.env",
+        "tail .env.production README.md",
+        "tail ./.env.test.local"
       ],
-      "residualRisk": "Préfixe Codex : seul le fichier placé juste après le programme est refusé ; tail -n 5 .env.local reste couvert par l’allow tail. La garde .env de Claude et de Cursor n’a pas cette limite."
+      "notMatch": [
+        "tail .env.example",
+        "tail src/lib/env.ts",
+        "tail .envrc"
+      ],
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites."
     },
     {
       "pattern": [
         "source",
-        ".env"
+        [
+          ".env",
+          ".env.local",
+          ".env.development",
+          ".env.development.local",
+          ".env.production",
+          ".env.production.local",
+          ".env.test",
+          ".env.test.local",
+          "./.env",
+          "./.env.local",
+          "./.env.development",
+          "./.env.development.local",
+          "./.env.production",
+          "./.env.production.local",
+          "./.env.test",
+          "./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9171,38 +9190,38 @@
       "riskClass": "shared-local-state",
       "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
       "match": [
-        "source .env"
-      ],
-      "notMatch": [
-        "source .envrc",
-        "source scripts/lib/env.sh"
-      ],
-      "residualRisk": "Préfixe Codex : un fichier .env nommé après d’autres arguments ou par une variable n’est pas reconnu. La garde .env de Claude et de Cursor n’a pas la limite de position."
-    },
-    {
-      "pattern": [
-        "source",
-        ".env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        "source .env.local"
-      ],
-      "notMatch": [
         "source .env",
-        "source scripts/ci-write-local-env.sh"
+        "source ./.env.local",
+        "source .env.production"
       ],
-      "residualRisk": "Préfixe Codex : un fichier .env nommé après d’autres arguments ou par une variable n’est pas reconnu. La garde .env de Claude et de Cursor n’a pas la limite de position."
+      "notMatch": [
+        "source .env.example",
+        "source scripts/lib/env.sh",
+        "source .envrc"
+      ],
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites."
     },
     {
       "pattern": [
         ".",
-        ".env"
+        [
+          ".env",
+          ".env.local",
+          ".env.development",
+          ".env.development.local",
+          ".env.production",
+          ".env.production.local",
+          ".env.test",
+          ".env.test.local",
+          "./.env",
+          "./.env.local",
+          "./.env.development",
+          "./.env.development.local",
+          "./.env.production",
+          "./.env.production.local",
+          "./.env.test",
+          "./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9211,38 +9230,38 @@
       "riskClass": "shared-local-state",
       "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
       "match": [
-        ". .env"
-      ],
-      "notMatch": [
-        ". .envrc",
-        ". scripts/lib/env.sh"
-      ],
-      "residualRisk": "Préfixe Codex : un fichier .env nommé après d’autres arguments ou par une variable n’est pas reconnu. La garde .env de Claude et de Cursor n’a pas la limite de position."
-    },
-    {
-      "pattern": [
-        ".",
-        ".env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        ". .env.local"
-      ],
-      "notMatch": [
         ". .env",
-        ". scripts/ci-write-local-env.sh"
+        ". ./.env.local",
+        ". .env.production"
       ],
-      "residualRisk": "Préfixe Codex : un fichier .env nommé après d’autres arguments ou par une variable n’est pas reconnu. La garde .env de Claude et de Cursor n’a pas la limite de position."
+      "notMatch": [
+        ". .env.example",
+        ". scripts/lib/env.sh",
+        ". .envrc"
+      ],
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites."
     },
     {
       "pattern": [
         "node",
-        "--env-file=.env"
+        [
+          "--env-file=.env",
+          "--env-file=.env.local",
+          "--env-file=.env.development",
+          "--env-file=.env.development.local",
+          "--env-file=.env.production",
+          "--env-file=.env.production.local",
+          "--env-file=.env.test",
+          "--env-file=.env.test.local",
+          "--env-file=./.env",
+          "--env-file=./.env.local",
+          "--env-file=./.env.development",
+          "--env-file=./.env.development.local",
+          "--env-file=./.env.production",
+          "--env-file=./.env.production.local",
+          "--env-file=./.env.test",
+          "--env-file=./.env.test.local"
+        ]
       ],
       "engines": [
         "codex"
@@ -9251,33 +9270,14 @@
       "riskClass": "shared-local-state",
       "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
       "match": [
-        "node --env-file=.env server.mjs"
-      ],
-      "notMatch": [
-        "node --env-file=.env.local server.mjs",
-        "node scripts/check.mjs"
-      ],
-      "residualRisk": "Préfixe Codex : --env-file placé après une autre option, écrit --env-file .env ou --env-file-if-exists n’est pas reconnu ; npx tsx reste refusé en entier. La garde .env de Claude et de Cursor n’a pas cette limite."
-    },
-    {
-      "pattern": [
-        "node",
-        "--env-file=.env.local"
-      ],
-      "engines": [
-        "codex"
-      ],
-      "decision": "forbidden",
-      "riskClass": "shared-local-state",
-      "justification": "Chargement d’un fichier .env refusé ; charger les secrets par un wrapper du dépôt.",
-      "match": [
-        "node --env-file=.env.local server.mjs"
-      ],
-      "notMatch": [
         "node --env-file=.env server.mjs",
+        "node --env-file=./.env.production server.mjs"
+      ],
+      "notMatch": [
+        "node --env-file=.env.example server.mjs",
         "node scripts/check.mjs"
       ],
-      "residualRisk": "Préfixe Codex : --env-file placé après une autre option, écrit --env-file .env.local ou --env-file-if-exists n’est pas reconnu ; npx tsx reste refusé en entier. La garde .env de Claude et de Cursor n’a pas cette limite."
+      "residualRisk": "Préfixe Codex : seuls .env, .env.local, .env.development, .env.production, .env.test, leurs variantes .local et leurs formes ./, placés juste après le programme, sont refusés. Un autre suffixe (.env.staging), un autre dossier (config/.env), une option ou un fichier placé avant (cat -n .env, cat a .env), et grep, rg ou sed sur .env restent couverts par leurs allow ; les modèles .env.example restent lisibles. La garde .env de Claude et de Cursor n’a pas ces limites. --env-file placé après une autre option, écrit --env-file .env ou --env-file-if-exists n’est pas reconnu ; npx tsx reste refusé en entier."
     }
   ]
 }

@@ -222,15 +222,32 @@ et xargs imbriqué. Les redirections et les autres segments gardent leurs contr�
 Le garde n’exécute ni xargs ni la commande analysée ; le test CoproOS original est
 également rejoué contre sa copie déposée dans un dépôt temporaire interne aux tests.
 
-**Scripts des plugins Claude Code installés** (décision du user du 2026-10-25) : `python3`,
-`bash` ou `node` suivi directement d’un fichier régulier situé sous `~/.claude/plugins/cache/`
-est accepté, par exemple `python3 ~/.claude/plugins/cache/…/scripts/write_scan_meta.py --out
-.agent-tmp/meta.json`. Les liens sont résolus avant la comparaison : un lien symbolique ou un
-`..` qui sort du cache est refusé, comme une option placée avant le script, un autre programme
-(`sh`, `perl`…) ou un lancement sous `xargs`. Seul ce script est exempté : les autres arguments,
-les redirections et les autres segments gardent leurs contrôles, donc une sortie hors worktree
-est refusée. Aucune écriture sous `~/.claude/plugins/` n’est permise, par Bash comme par
-Write/Edit/MultiEdit. Le contenu de ces scripts reste de confiance, comme celui des scripts du dépôt.
+Une affectation placée devant une commande mutante (`OUT=/tmp/x node scripts/a.mjs`,
+`NODE_OPTIONS=--require=/tmp/x.js node …`) voit sa valeur contrôlée comme un argument ;
+`BASE_URL=http://127.0.0.1:3001 npm run …` reste admis. Un interpréteur sans script dont
+l’entrée standard vient d’un pipe ou d’une redirection `<` exécute un programme invisible :
+`echo cmd | bash`, `bash < /tmp/x.sh` et `cat x.js | node` sont refusés, pas
+`git diff | node scripts/check.mjs` ni `node --version`.
+
+**Scripts des plugins Claude Code installés** (décision du user du 2026-10-25) : seuls des points
+d’entrée déclarés s’exécutent, jamais le reste du cache. La liste du socle, écrite dans la garde
+déposée, contient `claude-plugins-official/claude-security/*/scripts/*.py` et
+`claude-plugins-official/claude-security/*/scripts/keep-waiting.sh`, chemins relatifs à
+`~/.claude/plugins/cache/` où `*` remplace un nom de segment, ici la version. Un dépôt la
+complète dans `agent-policy/tools.json` (`pluginScripts`), avec la même grammaire : marketplace
+et plugin littéraux, ni `.` ni `..` ensuite. Une liste du dépôt invalide est ignorée entière.
+
+`python3`, `bash` ou `node` suivi directement d’un fichier régulier ainsi déclaré est accepté, par
+exemple `python3 ~/.claude/plugins/cache/claude-plugins-official/claude-security/0.12.0/scripts/write_scan_meta.py
+.agent-tmp/run . --mode changes`. Les liens sont résolus avant la comparaison : un lien symbolique
+ou un `..` qui sort du point d’entrée est refusé, comme une option placée avant le script, un
+autre programme (`sh`, `perl`…), un lancement sous `xargs` ou une entrée standard fournie par un
+pipe ou par `<`, dont le contenu n’est pas contrôlé. Seul le script est exempté. Ses arguments et
+les affectations placées devant lui sont découpés en fragments (`=`, `:`, `,`) et chaque fragment
+de chemin est contrôlé : `--out=/tmp/x`, `out:/tmp/x` et `OUT=/tmp/x` sont refusés, `-config`
+ou `-verbose` après le script lui appartiennent et passent. Les redirections et les autres segments
+gardent leurs contrôles. Aucune écriture sous `~/.claude/plugins/` n’est permise, par Bash comme
+par Write/Edit/MultiEdit. Le contenu des points d’entrée déclarés reste de confiance.
 
 **Limites : ce hook est un contrôle préalable, pas un sandbox système.** Son analyse shell
 est conservatrice : substitutions, heredocs, structures complexes, chemins dynamiques et
@@ -267,16 +284,26 @@ et isole l’état éventuel du processus Codex dans `.agent-tmp/`, ensuite nett
   `Grep`), commande `node scripts/agent-env-read-guard.cjs`, `failClosed: true`, délai de cinq secondes.
   Cursor lance les hooks de projet depuis la racine du dépôt
   ([hooks Cursor](https://cursor.com/docs/agent/hooks)). Les autres hooks Cursor sont conservés
-  selon les mêmes règles que pour Claude ; un fichier sans `version: 1` fait échouer `init`.
+  selon les mêmes règles que pour Claude ; un fichier sans `version` reçoit `"version": 1` en
+  tête, une autre version fait échouer `init`.
 
-La garde refuse toute référence à un fichier `.env` ou `.env.*` : chemin lu par Read ou
-`beforeReadFile` (lien symbolique résolu, pièces jointes Cursor comprises), `path` ou `glob` de
-Grep, et tout texte de commande, par exemple `cat .env`, `grep X .env`, `source .env`,
-`node --env-file=.env`, `cat < .env` ou `git show HEAD:.env`. Guillemets et antislashs sont
-retirés avant la recherche ; dans une commande, les jokers capables de produire `.env` (`.*`,
-`.e*`, `.[e]nv`, accolades) sont aussi refusés. Les noms voisins passent : `src/lib/env.ts`,
-`scripts/ci-write-local-env.sh`, `report.env.integration.md`, `.envrc`, `.venv/`. Les wrappers
-passent, puisque leur commande ne nomme aucun fichier `.env` : `./scripts/with-env.sh …`, `npm run dev`.
+La garde refuse toute référence à un fichier `.env` ou `.env.*`, sauf un modèle `*.example`
+(`.env.example`, `config/.env.local.example`) : chemin lu par Read ou `beforeReadFile` (lien
+symbolique résolu, pièces jointes Cursor comprises), `path` ou `glob` de Grep, et tout mot d’une
+commande, par exemple `cat .env`, `grep X .env`, `source .env`, `node --env-file=.env`,
+`cat < .env` ou `git show HEAD:.env`. Guillemets et antislashs sont retirés avant la recherche ;
+dans une commande, les jokers capables de produire `.env` (`.*`, `.e*`, `.[e]nv`, accolades) sont
+aussi refusés. Les noms voisins passent : `src/lib/env.ts`, `scripts/ci-write-local-env.sh`,
+`report.env.integration.md`, `.envrc`, `.venv/`. Les wrappers passent, puisque leur commande ne
+nomme aucun fichier `.env` : `./scripts/with-env.sh …`, `npm run dev`.
+
+Deux sortes de mots ne désignent aucun fichier et ne sont pas contrôlés : le motif de `grep`,
+`rg` ou `git grep` (premier argument, ou valeur de `-e`), et le texte d’un message, valeur de
+`-m` / `--message` pour `git commit`, `tag`, `merge`, `stash` et `notes`, ou de `--title`,
+`--body`, `-t`, `-b` pour `gh`. Ainsi `rg -n '\.env' .gitignore` et `git commit -m "ignorer .env"`
+passent, alors que `rg -g '.env*' X`, `rg -f .env`, `git commit -F .env` et `grep X < .env` restent
+refusés. Une commande avec substitution, heredoc ou structure shell n’est pas découpée : son texte
+entier est contrôlé, message compris.
 
 Le message de refus cite les wrappers déclarés par le dépôt dans `agent-policy/tools.json`,
 fichier créé vide par `init` et jamais écrasé ensuite :
@@ -285,6 +312,7 @@ fichier créé vide par `init` et jamais écrasé ensuite :
 {
   "version": 1,
   "envWrappers": ["./scripts/with-env.sh", "./scripts/with-supabase-env.sh"],
+  "pluginScripts": [],
   "worktree": { "privateFiles": [".env", ".env.local"], "install": [["npm", "ci"]], "notes": [] }
 }
 ```
@@ -294,29 +322,45 @@ Claude reçoit le code 2 et le message sur stderr. Cursor reçoit `{"permission"
 le code 0, ou `{"permission": "allow"}`. Un hook Claude chargé par Cursor (variable
 `CURSOR_VERSION` présente) répond aussi au format Cursor. Une entrée illisible est refusée.
 
-**Limites : contrôle textuel préalable, pas un sandbox.** Un motif de recherche `.env` est refusé
-comme un chemin (faux positif assumé). Une variable (`cat "$F"`), un encodage, un script du dépôt
-ou une lecture indirecte (`grep -r X .`, `rg -uu`) ne sont pas détectés. Seuls Bash, Read et Grep
-sont contrôlés côté Claude.
+Côté Cursor, `allow` laisse passer l’action sans l’approuver : la documentation le décrit comme
+« allow to proceed », et ses propres exemples de garde (`block-git.sh`, `kube_guard.py`) répondent
+`{"continue": true, "permission": "allow"}` pour toute commande qu’ils ne refusent pas. Des
+utilisateurs rapportent (novembre et décembre 2025) que seul `deny` s’impose face à l’allowlist,
+un `allow` de hook ne dispensant pas d’accord une commande hors liste
+([hooks](https://cursor.com/docs/hooks),
+[forum](https://forum.cursor.com/t/beforeshellexecution-hook-permissions-allow-ask-ignored-allow-list-takes-precedence/144244),
+vérifié le 2026-10-25 ; aucune réponse de l’équipe Cursor dans ce fil). Une sortie vide n’est pas
+une option : la documentation la compte parmi les échecs, bloquants avec `failClosed`. À revérifier
+si Cursor documente un jour `allow` comme une approbation.
 
-Codex, sans hook, reçoit dans le socle douze règles `forbidden` (`engines: ["codex"]`, risque
-`shared-local-state`), avec leurs miroirs RTK : `cat`, `head`, `tail`, `source` et `.` suivis de
-`.env` ou `.env.local`, ainsi que `node --env-file=.env` et `node --env-file=.env.local`. Elles
-l’emportent sur les allow `cat`, `head` et `tail`. Un préfixe ne voit que le fichier placé juste
-après le programme : `cat -n .env`, `grep X .env` et `sed -n p .env` restent couverts par les
-allow de lecture, limite écrite dans chaque `residualRisk`. `npx tsx` reste refusé en entier.
-Le socle admet un nom `.env` dans un motif de refus, jamais un chemin. La documentation de Codex
-décrit ses règles pour les commandes hors sandbox ; l’effet d’un `forbidden` sur une commande
-restée dans le sandbox n’y est pas précisé. Les 840 exemples du socle, ces refus compris, sont
-conformes à `codex execpolicy check` (Codex local, 2026-10-25).
+**Limites : contrôle textuel préalable, pas un sandbox.** Une variable (`cat "$F"`), un encodage,
+un script du dépôt ou une lecture indirecte (`grep -r X .`, `rg -uu`) ne sont pas détectés. Une
+option de recherche inconnue qui prend une valeur décale le motif : le refus est alors plus large,
+jamais plus étroit. Seuls Bash, Read et Grep sont contrôlés côté Claude.
+
+Codex, sans hook, reçoit dans le socle six règles `forbidden` (`engines: ["codex"]`, risque
+`shared-local-state`), avec leurs miroirs RTK : `cat`, `head`, `tail`, `source` et `.` suivis d’un
+fichier `.env`, `.env.local`, `.env.development`, `.env.production`, `.env.test`, de leurs variantes
+`.local` ou de leurs formes `./`, et `node --env-file=` suivi des mêmes noms. Chaque règle porte
+ces seize noms en **alternative** Codex (`["cat", [".env", ".env.local", …]]`). Elles l’emportent
+sur les allow `cat`, `head` et `tail`. Un préfixe ne voit que le fichier placé juste après le
+programme : `cat -n .env`, `cat a .env`, `grep X .env` et `sed -n p .env` restent couverts par les
+allow de lecture, comme un autre suffixe (`.env.staging`) ou un autre dossier (`config/.env`) ;
+ces limites sont écrites dans chaque `residualRisk`. `.env.example` reste lisible et `npx tsx`
+reste refusé en entier. Le socle admet un nom `.env`, éventuellement précédé de `./`, dans un motif
+de refus, jamais un autre chemin. La documentation de Codex décrit ses règles pour les commandes
+hors sandbox ; l’effet d’un `forbidden` sur une commande restée dans le sandbox n’y est pas
+précisé. Les 864 exemples du socle, ces refus compris, sont conformes à `codex execpolicy check`
+(Codex local, 2026-10-25).
 
 ### Casts TypeScript
 
 `init` dépose `scripts/claude-cast-guard.cjs` et le déclare dans `hooks.PostToolUse` de Claude :
 matcher `Write|Edit|MultiEdit`, commande `node "$CLAUDE_PROJECT_DIR/scripts/claude-cast-guard.cjs"`,
-délai de trente secondes. Après l’écriture d’un fichier `src/**/*.ts` ou `src/**/*.tsx`, la garde
-compte par l’API du compilateur les `as T` (hors `as const`), les `<T>x` (hors `<const>x`) et les
-`x!`, puis compare ce compte à celui de la version de `HEAD` (zéro pour un fichier nouveau).
+délai de trente secondes. Après l’écriture d’un fichier `src/**/*.ts`, `.tsx`, `.mts` ou `.cts`, la
+garde compte par l’API du compilateur les `as T` (hors `as const`), les `<T>x` (hors `<const>x`) et
+les `x!`, puis compare ce compte à celui de la version de `HEAD`. Après un `git mv`, le renommage
+indexé désigne l’ancien chemin ; un fichier absent de `HEAD` est comparé à zéro.
 Une hausse renvoie le code 2 et un message qui cite chaque occurrence nouvelle, avec sa ligne et
 son texte (vingt au plus). L’outil ayant déjà écrit, Claude reçoit ce refus et doit corriger le
 fichier. Un cast déjà présent ne bloque pas une modification ailleurs ; pour un même texte, seules
@@ -324,10 +368,11 @@ les occurrences au-delà du compte de `HEAD` sont citées. `satisfies`, `!==`, `
 ne comptent pas.
 
 TypeScript est chargé depuis `node_modules/typescript` du dépôt (`CLAUDE_PROJECT_DIR`), sans
-remonter aux dossiers parents : un dépôt sans TypeScript n’active pas la garde. Les écritures par
-Bash et les fichiers hors `src/` ne sont pas contrôlés. Hors dépôt Git, le fichier est comparé à
-zéro ; une entrée illisible ou un Git introuvable renvoie un refus explicite. Les tests utilisent
-la devDependency `typescript@5.9.3` de ce dépôt, liée dans un dépôt Git temporaire.
+remonter aux dossiers parents : un dépôt sans TypeScript n’active pas la garde, pas plus qu’un
+dossier sans Git, un Git introuvable ou un dépôt sans commit. Les écritures par Bash, les fichiers
+hors `src/` et un déplacement non indexé (`mv` sans `git add`) ne sont pas suivis. Une entrée
+illisible renvoie un refus explicite. Les tests utilisent la devDependency `typescript@5.9.3` de
+ce dépôt, liée dans des dépôts Git temporaires.
 
 ### Sous-agent brief-implementer
 
@@ -617,6 +662,10 @@ sans pipeline, expansion, redirection ou affectation. Les guillemets des argumen
 acceptés. Les mots du préfixe sont écrits sous leur forme canonique commune aux deux moteurs.
 Un exemple dont la représentation textuelle Claude et les arguments Codex divergent est refusé
 s’il cible les deux moteurs. Chaque exemple est vérifié uniquement contre les moteurs de son entrée.
+Seul un refus (`prompt` ou `forbidden`) ciblant Codex seul (`engines: ["codex"]`) peut placer à une
+position une **alternative**, liste d’au moins deux tokens distincts, selon la
+[syntaxe native de Codex](https://learn.chatgpt.com/docs/agent-configuration/rules) :
+`["cat", [".env", ".env.local"]]`. Elle reste interdite en allow, pour Claude et dans `commandPrefixes`.
 
 Exception pour un refus inexprimable en préfixe Codex : une entrée `forbidden` peut omettre
 `pattern`, `match` et `notMatch`, à condition de fournir `residualRisk` et `claudeDeny` avec ses

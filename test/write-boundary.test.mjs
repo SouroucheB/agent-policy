@@ -150,47 +150,97 @@ test('correctifs CoproOS repris : [id] littéral des outils de fichier, Shell, D
   assert.equal(project.status, 0);
 });
 
-test('plugins Claude Code installés : scripts exécutables, aucune écriture permise (DoD 16)', t => {
-  const root = temporary(t);
+// Cache de plugins fictif reproduisant la disposition réelle (claude-security 0.12.0, octo 9.37.3).
+function pluginCache(t) {
   const home = temporary(t);
-  initProject(root);
   const plugins = path.join(home, '.claude/plugins');
-  const scripts = path.join(plugins, 'cache/official/claude-security/1.0.0/scripts');
-  for (const name of ['write_scan_meta.py', 'run.sh', 'tool.mjs']) put(scripts, name, '# inerte : jamais exécuté par la garde\n');
+  const security = path.join(plugins, 'cache/claude-plugins-official/claude-security/0.12.0/scripts');
+  const octo = path.join(plugins, 'cache/nyldn-plugins/octo/9.37.3/scripts');
+  for (const name of ['write_scan_meta.py', 'save_result.py', 'keep-waiting.sh', 'lib/plugin.py', 'helper.sh']) put(security, name, '# inerte : jamais exécuté par la garde\n');
+  for (const name of ['install-hooks.sh', 'orchestrate.sh', 'validate-plugin-assembly.py', 'tool.mjs']) put(octo, name, '# inerte\n');
   put(plugins, 'outside.py', '# hors du cache\n');
-  put(plugins, 'marketplaces/official/tool.py', '# hors du cache\n');
   put(home, 'evil.py', '# hors du cache\n');
-  fs.symlinkSync(path.join(home, 'evil.py'), path.join(scripts, 'linked.py'));
-  fs.symlinkSync(home, path.join(scripts, 'escape'));
+  fs.symlinkSync(path.join(home, 'evil.py'), path.join(security, 'linked.py'));
+  fs.symlinkSync(home, path.join(security, 'escape'));
+  return { home, security, octo };
+}
+
+test('plugins Claude Code : seuls les points d’entrée déclarés s’exécutent, aucune écriture permise (DoD 16)', t => {
+  const root = temporary(t);
+  initProject(root);
+  const { home, security } = pluginCache(t);
   const env = { PATH: root, HOME: home, CLAUDE_PROJECT_DIR: root };
   const check = (command, expected) => {
     const result = run(root, 'Bash', { command }, { env });
     assert.equal(result.status, expected, `${command}: ${result.stderr}`);
   };
-  const script = '~/.claude/plugins/cache/official/claude-security/1.0.0/scripts';
+  const script = '~/.claude/plugins/cache/claude-plugins-official/claude-security/0.12.0/scripts';
+  const octo = '~/.claude/plugins/cache/nyldn-plugins/octo/9.37.3/scripts';
   for (const command of [
-    `python3 ${script}/write_scan_meta.py --out .agent-tmp/meta.json`, `python3 "$HOME/.claude/plugins/cache/official/claude-security/1.0.0/scripts/write_scan_meta.py" src`,
-    `python3 ${path.join(scripts, 'write_scan_meta.py')}`, `bash ${script}/run.sh .agent-tmp/report`, `node ${script}/tool.mjs --json`,
+    `python3 ${script}/write_scan_meta.py .agent-tmp/run . --mode changes --effort low --base origin/main --merge-base abc123`,
+    `python3 "$HOME/.claude/plugins/cache/claude-plugins-official/claude-security/0.12.0/scripts/save_result.py" .agent-tmp/out.json .agent-tmp/run`,
+    `python3 ${path.join(security, 'write_scan_meta.py')}`, `bash ${script}/keep-waiting.sh 10`,
     `rtk proxy python3 ${script}/write_scan_meta.py`, `/usr/bin/python3 ${script}/write_scan_meta.py 2>/dev/null`,
     `python3 ${script}/write_scan_meta.py > .agent-tmp/meta.json && cat .agent-tmp/meta.json`,
+    `python3 ${script}/write_scan_meta.py -config -verbose --range abc..def`,
   ]) check(command, 0);
   for (const command of [
-    // Écritures dans les plugins et sorties hors worktree, par argument ou redirection.
-    `touch ${script}/x`, `cp README.md ${script}/write_scan_meta.py`, 'echo x > ~/.claude/plugins/data.json', `rm ${script}/run.sh`,
+    // Écritures dans les plugins et sorties hors worktree : argument, fragment, affectation, redirection.
+    `touch ${script}/x`, `cp README.md ${script}/write_scan_meta.py`, 'echo x > ~/.claude/plugins/data.json', `rm ${script}/keep-waiting.sh`,
     `python3 ${script}/write_scan_meta.py --out ${script}/meta.json`, `python3 ${script}/write_scan_meta.py --out=/tmp/meta.json`,
+    `python3 ${script}/write_scan_meta.py out:/tmp/x`, `python3 ${script}/write_scan_meta.py a=b,/tmp/x`, `python3 ${script}/write_scan_meta.py -o/tmp/x`,
+    `OUT=/tmp/x python3 ${script}/write_scan_meta.py`, `OUT=out:/tmp/x python3 ${script}/write_scan_meta.py`,
     `python3 ${script}/write_scan_meta.py > ~/.claude/plugins/meta.json`, `python3 ${script}/write_scan_meta.py >> /tmp/meta.json`,
-    `python3 ${script}/write_scan_meta.py && touch ../x`, `bash ${script}/run.sh ../report`,
+    `python3 ${script}/write_scan_meta.py && touch ../x`, `bash ${script}/keep-waiting.sh ../report`,
+    // Entrée standard fournie au point d'entrée : son contenu n'est pas contrôlé.
+    `echo /tmp/x | bash ${script}/keep-waiting.sh`, `bash ${script}/keep-waiting.sh < /tmp/args`,
+    // Autres plugins et scripts non déclarés du cache.
+    `bash ${octo}/install-hooks.sh`, `bash ${octo}/orchestrate.sh 'consigne libre'`, `python3 ${octo}/validate-plugin-assembly.py`,
+    `python3 ${script}/lib/plugin.py`, `bash ${script}/helper.sh`,
     // Échappements du cache et formes non couvertes.
     'python3 ~/.claude/plugins/cache/../outside.py', `python3 ${script}/../../../../../outside.py`, `python3 ${script}/linked.py`,
-    `python3 ${script}/escape/evil.py`, 'python3 ~/.claude/plugins/marketplaces/official/tool.py', 'python3 ~/.claude/plugins/cache',
-    `python3 ${script}/absent.py`, `python3 -u ${script}/write_scan_meta.py`, `python3 -c "print(1)" ${script}/write_scan_meta.py`,
-    `perl ${script}/write_scan_meta.py`, `sh ${script}/run.sh`, `printf x | xargs python3 ${script}/write_scan_meta.py`,
+    `python3 ${script}/escape/evil.py`, 'python3 ~/.claude/plugins/cache', `python3 ${script}/absent.py`,
+    `python3 -u ${script}/write_scan_meta.py`, `python3 -c "print(1)" ${script}/write_scan_meta.py`,
+    `perl ${script}/write_scan_meta.py`, `sh ${script}/keep-waiting.sh`, `printf x | xargs python3 ${script}/write_scan_meta.py`,
     `cd ${script} && python3 write_scan_meta.py`, `python3 ${script}/*.py`,
   ]) check(command, 2);
   for (const tool of ['Write', 'Edit', 'MultiEdit']) {
-    assert.equal(run(root, tool, { file_path: path.join(scripts, 'write_scan_meta.py') }, { env }).status, 2, tool);
+    assert.equal(run(root, tool, { file_path: path.join(security, 'write_scan_meta.py') }, { env }).status, 2, tool);
   }
-  assert.equal(fs.readFileSync(path.join(scripts, 'write_scan_meta.py'), 'utf8'), '# inerte : jamais exécuté par la garde\n');
+  assert.equal(fs.readFileSync(path.join(security, 'write_scan_meta.py'), 'utf8'), '# inerte : jamais exécuté par la garde\n');
+});
+
+test('plugins Claude Code : un dépôt complète la liste dans tools.json, jamais au-delà', t => {
+  const root = temporary(t);
+  initProject(root);
+  const { home } = pluginCache(t);
+  const env = { PATH: root, HOME: home, CLAUDE_PROJECT_DIR: root };
+  const octo = '~/.claude/plugins/cache/nyldn-plugins/octo/9.37.3/scripts';
+  const status = command => run(root, 'Bash', { command }, { env }).status;
+  const tools = pluginScripts => put(root, PROJECT_FILES.tools, { version: 1, envWrappers: [], pluginScripts, worktree: { privateFiles: [], install: [], notes: [] } });
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+  tools(['nyldn-plugins/octo/*/scripts/tool.mjs', 'nyldn-plugins/octo/*/scripts/validate-plugin-assembly.py']);
+  assert.equal(status(`node ${octo}/tool.mjs --json`), 0);
+  assert.equal(status(`python3 ${octo}/validate-plugin-assembly.py`), 0);
+  assert.equal(status(`bash ${octo}/install-hooks.sh`), 2);
+  // Une entrée hors grammaire (joker de marketplace, ..) invalide la liste du dépôt entière.
+  tools(['*/octo/*/scripts/tool.mjs']);
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+  tools(['nyldn-plugins/octo/../octo/*/scripts/tool.mjs']);
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+});
+
+test('affectations préfixées et interpréteurs nourris par stdin : contrôlés comme des arguments', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const command of [
+    'OUT=/tmp/x node scripts/report.mjs', 'NODE_OPTIONS=--require=/tmp/evil.js node scripts/report.mjs', 'TARGET=../x npm run build',
+    "echo 'touch /tmp/x' | bash", 'printf x | python3 -', 'bash < /tmp/script.sh', 'cat /tmp/code.js | node',
+  ]) bash(root, command, 2);
+  for (const command of [
+    'NODE_ENV=test npm run test', 'BASE_URL=http://127.0.0.1:3001 npm run test:e2e', 'TMPDIR=.agent-tmp/run npm run build',
+    'OUT=/tmp/x cat README.md', 'git diff | node scripts/check.mjs', 'node --version', 'python3 scripts/tool.py < .agent-tmp/input.json',
+  ]) bash(root, command, 0);
 });
 
 test('Write/Edit/MultiEdit : créations, modifications, traversées, symlinks et cwd', t => {

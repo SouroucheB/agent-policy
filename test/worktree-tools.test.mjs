@@ -11,7 +11,7 @@ const GIT_ENV = { GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
 const PRIVATE_LINE = 'PRIVATE_FIXTURE=never-printed';
 const NOTE = 'Base locale partagée : coordonner les migrations entre worktrees.';
 const tools = (worktree = {}) => ({
-  version: 1, envWrappers: [],
+  version: 1, envWrappers: [], pluginScripts: [],
   worktree: { privateFiles: ['.env', '.env.local'], install: [['npm', 'ci'], ['test', '-f', 'node_modules/marker']], notes: [NOTE], ...worktree },
 });
 function git(cwd, ...args) {
@@ -126,6 +126,9 @@ test('tools.json : modèle créé par init, jamais écrasé, validé avant toute
     tools({ privateFiles: ['/abs/.env'] }), tools({ privateFiles: ['.git/config'] }), tools({ privateFiles: ['a\\b'] }),
     tools({ privateFiles: ['.env', '.env'] }), tools({ install: [[]] }), tools({ install: ['npm ci'] }),
     tools({ install: [['npm', '']] }), tools({ notes: ['deux\nlignes'] }), { ...tools(), envWrappers: [''] },
+    { ...tools(), pluginScripts: ['*/claude-security/*/scripts/*.py'] }, { ...tools(), pluginScripts: ['market/*/scripts/x.py'] },
+    { ...tools(), pluginScripts: ['market/plugin/../other/x.py'] }, { ...tools(), pluginScripts: ['/abs/plugin/x.py'] },
+    { ...tools(), pluginScripts: ['market/plugin'] }, (({ pluginScripts, ...rest }) => rest)(tools()),
   ]) {
     assert.throws(() => validateTools(invalid), /Outils/u, JSON.stringify(invalid));
     const fresh = temporary(t);
