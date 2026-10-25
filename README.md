@@ -3,17 +3,19 @@
 Une source JSON traduit les décisions de commandes pour **Codex et Claude Code**.
 Le socle global est dans [`core-policy.json`](core-policy.json) ; chaque dépôt garde
 sa propre couche, une copie versionnée du socle, un générateur autonome et une commande de brief. Node.js ≥ 22, aucune dépendance
-d’exécution ou de test, JavaScript sans casts. Les échanges et la documentation sont en français.
+d’exécution, JavaScript sans casts. Seuls les tests de la garde des casts utilisent TypeScript 5.9.3, épinglé en
+`devDependencies` ; la garde déposée charge celui du dépôt consommateur. Les échanges et la documentation sont en français.
 
 ## Installer l’outil sur chaque machine
 
 Depuis un checkout de cette PR, puis de la version relue et fusionnée :
 
 ```sh
+npm ci --ignore-scripts
 npm test
 mkdir -p .agent-tmp
 npm pack --pack-destination .agent-tmp
-npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.3.0.tgz
+npm install --global --ignore-scripts ./.agent-tmp/souroucheb-agent-policy-1.4.0.tgz
 agent-policy --help
 ```
 
@@ -103,21 +105,28 @@ Structure à versionner dans le projet :
 
 ```text
 agent-policy/policy.json              # source du dépôt, vide mais valide à l'initialisation
+agent-policy/tools.json               # couche du dépôt pour les outils déposés, vide mais valide
 agent-policy/core-policy.json         # copie exacte du socle de l'outil
 agent-policy/core-policy.version.json # version de l'outil et SHA-256 de cette copie
 scripts/agent-policy/generate.mjs     # copie autonome avec version et socle embarqué
 scripts/agent-policy/brief.mjs        # commande de brief autonome avec en-tête de version
-scripts/claude-worktree-write-guard.cjs # garde Claude autonome avec en-tête de version
+scripts/agent-policy/worktree-new.mjs # amorçage d'un worktree, lit agent-policy/tools.json
+scripts/agent-policy/agent-tmp.sh     # dossier de travail sous .agent-tmp/, sans purge
+scripts/claude-worktree-write-guard.cjs # garde d'écriture Claude autonome
+scripts/agent-env-read-guard.cjs      # garde .env commune à Claude et Cursor
+scripts/claude-cast-guard.cjs         # garde des casts TypeScript, inactive sans TypeScript
+.claude/agents/brief-implementer.md   # sous-agent Claude qui réalise un brief
 .codex/rules/project.rules           # sortie générée
-.claude/settings.json                # hook du garde dès init ; entrées Bash produites par build
+.claude/settings.json                # hooks des trois gardes dès init ; entrées Bash produites par build
+.cursor/hooks.json                   # hooks Cursor de la garde .env dès init
 ```
 
 `init` conserve les fichiers existants et ajoute les copies absentes. `agent-policy init --upgrade`
-rafraîchit le socle, sa version, le générateur, la commande `brief` et le garde depuis l’outil installé,
-sans modifier un octet de `policy.json`.
+rafraîchit le socle, sa version, le générateur, la commande `brief`, les gardes, le sous-agent et les
+scripts de worktree depuis l’outil installé, sans modifier un octet de `policy.json` ni de `tools.json`.
 Ces deux commandes sont idempotentes. Une source existante invalide fait échouer l’opération.
 Le champ `version: 1` des politiques reste la version de leur **format**. Le fichier
-`core-policy.version.json` porte la version de livraison du socle (1.3.0) et son empreinte,
+`core-policy.version.json` porte la version de livraison du socle (1.4.0) et son empreinte,
 sans ajouter de champ ni changer le format de la politique du dépôt.
 
 La gate du projet appelle sa **copie versionnée**, sans outil global, paquet à télécharger ni réseau :
@@ -168,14 +177,17 @@ l’appel, sans jamais exécuter le texte Bash reçu ([contrat des hooks Claude]
 Node doit être disponible dans le PATH de Claude. Versionner le garde et les réglages avec
 les autres fichiers déposés, puis recharger les réglages de Claude avant de travailler.
 
-`init` ne possède que cette déclaration : les autres hooks, leurs options, les permissions,
-les autres clés et leur ordre sont conservés, sans reformater leurs valeurs. Une post-condition
-vérifie cette conservation et la présence d’un seul garde synchrone sur les quatre outils,
-avant toute écriture. Les réglages invalides ou `disableAllHooks: true` font échouer `init`.
+`init` ne possède que les déclarations de ses trois gardes (celle-ci, la garde `.env` et la garde
+des casts décrites plus bas) : les autres hooks, leurs options, les permissions, les autres clés
+et leur ordre sont conservés, sans reformater leurs valeurs. Une déclaration ajoutée suit
+l’indentation du tableau qui la reçoit. Une post-condition vérifie cette conservation et la
+présence d’une seule déclaration synchrone par garde, avant toute écriture. Les réglages
+invalides ou `disableAllHooks: true` font échouer `init`.
 `build` conserve ensuite tous les hooks ; il continue de ne posséder que les permissions Bash.
 
 Un dépôt comme CoproOS qui déclare déjà exactement ce garde ne reçoit aucune seconde
-déclaration et son `settings.json` reste identique octet pour octet. Les anciennes invocations
+déclaration ; seules les déclarations absentes des autres gardes sont ajoutées, puis les
+répétitions laissent `settings.json` identique octet pour octet. Les anciennes invocations
 relatives `node scripts/claude-worktree-write-guard.cjs` (avec ou sans `./`) et la forme
 `${CLAUDE_PROJECT_DIR}` citée sont reconnues et normalisées. Les autres commandes ne sont
 jamais identifiées par une simple sous-chaîne. Un fichier existant est conservé par `init` ;
@@ -210,6 +222,16 @@ et xargs imbriqué. Les redirections et les autres segments gardent leurs contr�
 Le garde n’exécute ni xargs ni la commande analysée ; le test CoproOS original est
 également rejoué contre sa copie déposée dans un dépôt temporaire interne aux tests.
 
+**Scripts des plugins Claude Code installés** (décision du user du 2026-10-25) : `python3`,
+`bash` ou `node` suivi directement d’un fichier régulier situé sous `~/.claude/plugins/cache/`
+est accepté, par exemple `python3 ~/.claude/plugins/cache/…/scripts/write_scan_meta.py --out
+.agent-tmp/meta.json`. Les liens sont résolus avant la comparaison : un lien symbolique ou un
+`..` qui sort du cache est refusé, comme une option placée avant le script, un autre programme
+(`sh`, `perl`…) ou un lancement sous `xargs`. Seul ce script est exempté : les autres arguments,
+les redirections et les autres segments gardent leurs contrôles, donc une sortie hors worktree
+est refusée. Aucune écriture sous `~/.claude/plugins/` n’est permise, par Bash comme par
+Write/Edit/MultiEdit. Le contenu de ces scripts reste de confiance, comme celui des scripts du dépôt.
+
 **Limites : ce hook est un contrôle préalable, pas un sandbox système.** Son analyse shell
 est conservatrice : substitutions, heredocs, structures complexes, chemins dynamiques et
 wrappers opaques peuvent être refusés. Elle ne prouve pas les effets de tous les programmes
@@ -227,13 +249,122 @@ Conserver le sandbox de l’agent et utiliser des wrappers de projet revus pour 
 
 Codex ne reçoit aucun hook : `workspace-write` pose déjà sa frontière. **Une commande
 autorisée côté Codex s’exécute hors sandbox** ; une règle allow ne garantit donc pas son
-confinement au worktree. Cette livraison ne change ni le socle ni les règles générées des
-deux moteurs et n’exécute aucune installation globale.
+confinement au worktree. La frontière d’écriture ne change ni le socle ni les règles générées
+des deux moteurs et n’exécute aucune installation globale.
 
 `check --codex` ajoute, si `codex` est installé, un contrôle natif de chaque commande d’exemple
 avec `codex execpolicy check`. Il n’exécute pas ces commandes. Codex absent n’est pas un échec ;
 un binaire présent qui échoue ou donne un verdict différent l’est. Ce contrôle reste hors ligne
 et isole l’état éventuel du processus Codex dans `.agent-tmp/`, ensuite nettoyé.
+
+### Lecture des fichiers .env
+
+`init` dépose `scripts/agent-env-read-guard.cjs`, fichier CommonJS autonome sans dépendance, et le déclare :
+
+- Claude, `hooks.PreToolUse` : matcher `Bash|Read|Grep`, commande
+  `node "$CLAUDE_PROJECT_DIR/scripts/agent-env-read-guard.cjs"`, délai de cinq secondes ;
+- Cursor, `.cursor/hooks.json` : `beforeReadFile`, `beforeShellExecution` et `preToolUse` (matcher
+  `Grep`), commande `node scripts/agent-env-read-guard.cjs`, `failClosed: true`, délai de cinq secondes.
+  Cursor lance les hooks de projet depuis la racine du dépôt
+  ([hooks Cursor](https://cursor.com/docs/agent/hooks)). Les autres hooks Cursor sont conservés
+  selon les mêmes règles que pour Claude ; un fichier sans `version: 1` fait échouer `init`.
+
+La garde refuse toute référence à un fichier `.env` ou `.env.*` : chemin lu par Read ou
+`beforeReadFile` (lien symbolique résolu, pièces jointes Cursor comprises), `path` ou `glob` de
+Grep, et tout texte de commande, par exemple `cat .env`, `grep X .env`, `source .env`,
+`node --env-file=.env`, `cat < .env` ou `git show HEAD:.env`. Guillemets et antislashs sont
+retirés avant la recherche ; dans une commande, les jokers capables de produire `.env` (`.*`,
+`.e*`, `.[e]nv`, accolades) sont aussi refusés. Les noms voisins passent : `src/lib/env.ts`,
+`scripts/ci-write-local-env.sh`, `report.env.integration.md`, `.envrc`, `.venv/`. Les wrappers
+passent, puisque leur commande ne nomme aucun fichier `.env` : `./scripts/with-env.sh …`, `npm run dev`.
+
+Le message de refus cite les wrappers déclarés par le dépôt dans `agent-policy/tools.json`,
+fichier créé vide par `init` et jamais écrasé ensuite :
+
+```json
+{
+  "version": 1,
+  "envWrappers": ["./scripts/with-env.sh", "./scripts/with-supabase-env.sh"],
+  "worktree": { "privateFiles": [".env", ".env.local"], "install": [["npm", "ci"]], "notes": [] }
+}
+```
+
+Sans wrapper déclaré, ou si ce fichier est illisible, le refus demande de consulter le user.
+Claude reçoit le code 2 et le message sur stderr. Cursor reçoit `{"permission": "deny", …}` avec
+le code 0, ou `{"permission": "allow"}`. Un hook Claude chargé par Cursor (variable
+`CURSOR_VERSION` présente) répond aussi au format Cursor. Une entrée illisible est refusée.
+
+**Limites : contrôle textuel préalable, pas un sandbox.** Un motif de recherche `.env` est refusé
+comme un chemin (faux positif assumé). Une variable (`cat "$F"`), un encodage, un script du dépôt
+ou une lecture indirecte (`grep -r X .`, `rg -uu`) ne sont pas détectés. Seuls Bash, Read et Grep
+sont contrôlés côté Claude.
+
+Codex, sans hook, reçoit dans le socle douze règles `forbidden` (`engines: ["codex"]`, risque
+`shared-local-state`), avec leurs miroirs RTK : `cat`, `head`, `tail`, `source` et `.` suivis de
+`.env` ou `.env.local`, ainsi que `node --env-file=.env` et `node --env-file=.env.local`. Elles
+l’emportent sur les allow `cat`, `head` et `tail`. Un préfixe ne voit que le fichier placé juste
+après le programme : `cat -n .env`, `grep X .env` et `sed -n p .env` restent couverts par les
+allow de lecture, limite écrite dans chaque `residualRisk`. `npx tsx` reste refusé en entier.
+Le socle admet un nom `.env` dans un motif de refus, jamais un chemin. La documentation de Codex
+décrit ses règles pour les commandes hors sandbox ; l’effet d’un `forbidden` sur une commande
+restée dans le sandbox n’y est pas précisé. Les 840 exemples du socle, ces refus compris, sont
+conformes à `codex execpolicy check` (Codex local, 2026-10-25).
+
+### Casts TypeScript
+
+`init` dépose `scripts/claude-cast-guard.cjs` et le déclare dans `hooks.PostToolUse` de Claude :
+matcher `Write|Edit|MultiEdit`, commande `node "$CLAUDE_PROJECT_DIR/scripts/claude-cast-guard.cjs"`,
+délai de trente secondes. Après l’écriture d’un fichier `src/**/*.ts` ou `src/**/*.tsx`, la garde
+compte par l’API du compilateur les `as T` (hors `as const`), les `<T>x` (hors `<const>x`) et les
+`x!`, puis compare ce compte à celui de la version de `HEAD` (zéro pour un fichier nouveau).
+Une hausse renvoie le code 2 et un message qui cite chaque occurrence nouvelle, avec sa ligne et
+son texte (vingt au plus). L’outil ayant déjà écrit, Claude reçoit ce refus et doit corriger le
+fichier. Un cast déjà présent ne bloque pas une modification ailleurs ; pour un même texte, seules
+les occurrences au-delà du compte de `HEAD` sont citées. `satisfies`, `!==`, `!x` et `let x!: T`
+ne comptent pas.
+
+TypeScript est chargé depuis `node_modules/typescript` du dépôt (`CLAUDE_PROJECT_DIR`), sans
+remonter aux dossiers parents : un dépôt sans TypeScript n’active pas la garde. Les écritures par
+Bash et les fichiers hors `src/` ne sont pas contrôlés. Hors dépôt Git, le fichier est comparé à
+zéro ; une entrée illisible ou un Git introuvable renvoie un refus explicite. Les tests utilisent
+la devDependency `typescript@5.9.3` de ce dépôt, liée dans un dépôt Git temporaire.
+
+### Sous-agent brief-implementer
+
+`init` dépose `.claude/agents/brief-implementer.md`, sous-agent Claude qui réalise un seul brief
+rendu par `agent-policy brief` ou `scripts/agent-policy/brief.mjs`. Ses outils sont Read, Grep,
+Glob, Edit, MultiEdit, Write et Bash, sans outil de délégation. Il impose : lire le brief, son plan,
+la fiche du sujet et les déclencheurs du dépôt ; aucun cast ni `any` ; des tests colocalisés selon
+la convention du dépôt ; une validation par `tsc` et des tests ciblés, jamais la gate complète ;
+aucun commit ; un rapport final (fichiers touchés, commandes et résultats, restes). Le modèle n’est
+pas fixé dans le fichier : l’orchestrateur le choisit à l’appel, d’après l’en-tête du brief.
+
+### Worktrees et dossiers de travail
+
+`node scripts/agent-policy/worktree-new.mjs <sujet>` reprend `worktree-new.sh` de CoproOS sans son
+contenu propre. Le sujet s’écrit en minuscules, chiffres et tirets ; le worktree
+`.worktrees/<sujet>` du checkout principal porte la branche `chore/<sujet>`, créée depuis
+`origin/main` actualisé. La couche du dépôt fournit, dans `agent-policy/tools.json` :
+
+- `worktree.privateFiles` : fichiers privés copiés depuis le checkout principal, chemins relatifs
+  sans `..` ni `.git`. Chacun doit exister, être un fichier régulier et être ignoré par Git, dans
+  le checkout principal puis dans la branche créée. La copie est en `0600` ; son contenu n’est
+  jamais affiché.
+- `worktree.install` : commandes argv lancées dans le worktree, sans shell, avec `npm_config_cache`
+  dans un dossier `.agent-tmp/bootstrap-*` de ce worktree.
+- `worktree.notes` : lignes affichées une fois le worktree prêt.
+
+Tous les contrôles précèdent la création ; un échec ultérieur conserve le worktree et l’annonce.
+CoproOS déclarerait par exemple `[".env", ".env.local"]`, puis `[["npm", "ci"], ["test", "-f",
+"node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs"], ["test", "-f", "public/pdf.worker.min.mjs"]]`
+et ses notes sur la Supabase locale partagée et le runbook des worktrees.
+
+`bash scripts/agent-policy/agent-tmp.sh create <label>` crée `.agent-tmp/<label>-<horodatage>-<pid>`
+à la racine du checkout courant et affiche son chemin ; le label suit `[A-Za-z0-9._-]+`. Le script
+ne purge rien et n’a pas de mode `prune` : la purge des dossiers de plus de sept jours a une seule
+implémentation, la maintenance locale du user (`local-maintenance/worktrees.mjs`, hors paquet), qui
+parcourt chaque jour tous les worktrees des dépôts qu’elle liste. Un dépôt absent de cette liste
+n’a pas de purge automatique. `.agent-tmp/` et `.worktrees/` doivent être ignorés par Git.
 
 ## Consommer la politique depuis le code
 
@@ -570,7 +701,7 @@ Les mêmes contrôles d’allow s’appliquent aux entrées dérivées.
 | `rtk proxy rm file` | forbidden | deny |
 | `rtk rg needle src` | allow | allow |
 | `rtk proxy cat README.md` | allow | allow |
-| `rtk proxy cat .env` | allow | deny |
+| `rtk proxy cat .env` | forbidden | deny |
 
 Le socle déclare les deux préfixes ci-dessus. Une couche de dépôt en bénéficie sans les redéclarer :
 `npm run test:gate` génère aussi `rtk npm run test:gate` et `rtk proxy npm run test:gate` avec la
@@ -795,8 +926,9 @@ libres, notamment [`w` (écriture) et `e` sur GNU sed (exécution)](https://www.
 frontière d’écriture. Claude conserve ses gardes en ask pour `-i` / `--in-place` et ses
 gardes `.env*` existantes.
 
-Les préfixes `cat` et `ls` ne filtrent pas les noms `.env`, déjà lisibles dans le sandbox ;
-cette limite figure dans leurs `residualRisk`. `ls` affiche les noms et métadonnées, pas le
+Le préfixe `ls` ne filtre pas les noms `.env`, déjà lisibles dans le sandbox ; `cat .env` et
+`cat .env.local` sont refusés par des règles plus strictes, mais une option ou un autre fichier
+placé avant `.env` n’est pas filtré. Ces limites figurent dans leurs `residualRisk`. `ls` affiche les noms et métadonnées, pas le
 contenu des fichiers. Les options GNU vérifiées dans les sources de
 [`cat`](https://github.com/coreutils/coreutils/blob/master/src/cat.c) et de
 [`ls`](https://github.com/coreutils/coreutils/blob/master/src/ls.c), ainsi que les options
@@ -832,7 +964,7 @@ Limites Codex du miroir, identiques sous `rtk` et `rtk proxy` :
 | Formes exactes `uniq` | Fin d’arguments non exprimable : aucune règle Codex ; allow Claude exacts conservés. |
 | `git branch --list` | Aucune règle Codex : `--no-list -D` annulerait la lecture et permettrait une suppression. |
 | Lectures Git avec `--ext-diff`, `--output` ; `git grep -O` / `--open-files-in-pager` | Risques d’exécution et d’écriture acceptés explicitement dans les allow Codex ; aucune exclusion d’options libres. |
-| `.env*`, options sensibles d’`awk`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour awk et file. Les filtres Codex autorisés, cat et ls ne filtrent pas les chemins `.env*`. |
+| `.env*`, options sensibles d’`awk`, `file` | Gardes textuelles propres à Claude ; aucune règle Codex pour awk et file. Les filtres Codex autorisés, cat et ls ne filtrent pas les chemins `.env*`, sauf `cat`, `head`, `tail`, `source`, `.` et `node --env-file=` suivis de `.env` ou `.env.local`, refusés. |
 | `sed -n … -i` / `--in-place` | Seul le préfixe exact `sed -n` est allow Codex, avec risque accepté comme `sort -o`. Les options en position libre et les programmes sed ne sont pas filtrés ; gardes Claude inchangées. |
 | `rg … --pre`, `rtk grep … --pre` | L’allow Codex explicite conserve cette capacité ; risque résiduel documenté. |
 | `sort -o`, `sort --compress-program` | Le préfixe Codex autorise aussi ces variantes, comme les arguments libres des autres filtres convenus. |
@@ -979,6 +1111,7 @@ Pour les arbitrages de parité : [`git add --edit`](https://git-scm.com/docs/git
 ## Vérification du dépôt de l’outil
 
 ```sh
+npm ci --ignore-scripts
 npm test
 ```
 
@@ -999,5 +1132,8 @@ simulés (formes directes et RTK), la post-condition Claude, le contrat/rendu ex
 le ciblage `engines`, les miroirs hérités par les dépôts, les formes natives RTK, les sessions courantes,
 la copie versionnée du socle, ses dérives et l’API autonome de décision combinée,
 les gardes de lecture/écriture, les injections dans les jokers et le rejeu JSONL sans écriture,
-exécution ni affichage d’arguments. Aucun appel fournisseur, aucun
-paquet téléchargé et aucune installation globale ne sont nécessaires.
+exécution ni affichage d’arguments. Ils couvrent aussi la garde `.env` (Claude, Cursor et règles
+Codex), la garde des casts contre le vrai TypeScript, le sous-agent, `worktree-new.mjs` et
+`agent-tmp.sh` dans des dépôts Git temporaires, et les scripts de plugins Claude Code installés.
+Aucun appel fournisseur ni installation globale n’est nécessaire ; seul `npm ci` télécharge
+TypeScript, une fois.

@@ -1,3 +1,4 @@
 .agent-tmp/
+.worktrees/
 node_modules/
 *.tgz
