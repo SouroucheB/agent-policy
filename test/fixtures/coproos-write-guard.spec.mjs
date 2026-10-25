@@ -18,6 +18,28 @@ function run(input) {
 assert.equal(run({ tool_name: 'Write', tool_input: { file_path: path.join(repositoryRoot, '.agent-tmp/run/report.json') } }).status, 0)
 assert.equal(run({ tool_name: 'Edit', tool_input: { file_path: '/private/tmp/coproos.json' } }).status, 2)
 assert.equal(run({ tool_name: 'Write', tool_input: { file_path: path.join(repositoryRoot, '..', 'outside.json') } }).status, 2)
+// Route dynamique Next.js : pour un outil de fichier, « [id] » est un nom littéral, pas un joker.
+assert.equal(run({ tool_name: 'Edit', tool_input: { file_path: path.join(repositoryRoot, 'src/app/dossiers/[id]/page.tsx') } }).status, 0)
+assert.equal(run({ tool_name: 'Write', tool_input: { file_path: '/private/tmp/[id]/page.tsx' } }).status, 2)
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'sed -i "" s/a/b/ "src/app/dossiers/[id]/page.tsx"' } }).status, 2)
+// Commande git : un chemin à crochets cité est littéral pour le shell ; seule la frontière compte.
+const bracketCommands = ['git add', 'git rm', 'git restore', 'git checkout --', 'git diff', 'git log --', 'git show HEAD --']
+for (const command of bracketCommands) {
+  assert.equal(run({ tool_name: 'Bash', tool_input: { command: `${command} "src/app/dossiers/[id]/export/page.tsx"` } }).status, 0, command)
+  assert.equal(run({ tool_name: 'Bash', tool_input: { command: `${command} 'src/app/dossiers/[id]/export/page.tsx'` } }).status, 0, command)
+}
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add src/app/dossiers/\\[id\\]/export/page.tsx' } }).status, 0)
+// Sans guillemets, « [id] » est un joker du shell : refusé.
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add src/app/dossiers/[id]/export/page.tsx' } }).status, 2)
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git rm src/app/dossiers/[id]/export/page.tsx' } }).status, 2)
+// Même texte cité puis non cité dans la même commande : le joker l'emporte.
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add "src/app/[id]/a.tsx" src/app/[id]/a.tsx' } }).status, 2)
+// Cité mais hors du worktree : refusé.
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add "/private/tmp/[id]/page.tsx"' } }).status, 2)
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add "../outside/[id]/page.tsx"' } }).status, 2)
+// Cité mais dynamique : « $ » et la substitution restent refusés.
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add "src/app/$DIR/[id]/page.tsx"' } }).status, 2)
+assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'git add "src/app/$(pwd)/[id]/page.tsx"' } }).status, 2)
 assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'npm run test:hooks' } }).status, 0)
 assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'mv .agent-tmp/a /Users/sourouche/.local/state/coproos/a' } }).status, 2)
 assert.equal(run({ tool_name: 'Bash', tool_input: { command: 'node /private/tmp/scratch.mjs' } }).status, 2)

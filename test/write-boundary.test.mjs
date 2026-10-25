@@ -5,7 +5,11 @@ import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import { initProject, readCore } from '../lib/system.mjs';
 import { buildProject, checkProject, generateCodex, generatePermissions, PROJECT_FILES } from '../lib/generate.mjs';
-import { WRITE_GUARD_FILE, WRITE_GUARD_HOOK, generateWriteGuardSettings, assertWriteGuardPostcondition } from '../lib/write-boundary.mjs';
+import { VERSION } from '../lib/generate.mjs';
+import {
+  WRITE_GUARD_FILE, WRITE_GUARD_HOOK, ENV_GUARD_FILE, ENV_GUARD_HOOK, CAST_GUARD_FILE, CAST_GUARD_HOOK, CURSOR_HOOKS_FILE,
+  generateClaudeHooks, assertClaudeHooksPostcondition,
+} from '../lib/hooks.mjs';
 import { temporary, put, mixedClaudeSettings, ROOT } from './helpers.mjs';
 
 function run(root, tool, input, options = {}) {
@@ -41,8 +45,8 @@ test('garde autonome : reprise des cas CoproOS, sans exécuter les commandes', t
 test('test original CoproOS inchangé exécuté contre le garde déposé, dans un dépôt temporaire', t => {
   const root = temporary(t);
   initProject(root);
-  // Copie exacte de scripts/__tests__/claude-worktree-write-guard.spec.mjs,
-  // lue dans CoproOS le 2026-09-21 ; aucun accès à CoproOS pendant les tests.
+  // Copie exacte de scripts/__tests__/claude-worktree-write-guard.spec.mjs, lue dans
+  // CoproOS le 2026-10-25 (dernier changement 80bc30ad) ; aucun accès à CoproOS pendant les tests.
   const spec = 'scripts/__tests__/claude-worktree-write-guard.spec.mjs';
   put(root, spec, fs.readFileSync(path.join(ROOT, 'test/fixtures/coproos-write-guard.spec.mjs'), 'utf8'));
   const result = spawnSync(process.execPath, [spec], { cwd: root, encoding: 'utf8', timeout: 15000, env: { PATH: root } });
@@ -118,6 +122,127 @@ test('xargs ne contourne ni redirections externes ni refus des autres segments',
   bash(root, 'cd .. && lsof -ti :3000 | xargs kill -9', 0);
 });
 
+test('correctifs CoproOS repris : [id] littéral des outils de fichier, Shell, Delete et sortie Cursor', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const tool of ['Write', 'Edit', 'MultiEdit', 'Delete']) {
+    assert.equal(run(root, tool, { file_path: 'src/app/dossiers/[id]/page.tsx' }).status, 0, tool);
+    assert.equal(run(root, tool, { path: path.join(root, 'src/app/[slug]/{x}.tsx') }).status, 0, tool);
+    for (const file_path of ['/private/tmp/[id]/page.tsx', '~/[id].tsx', '$HOME/x', 'src/$DIR/x', '../[id]/x']) {
+      assert.equal(run(root, tool, { file_path }).status, 2, `${tool} ${file_path}`);
+    }
+  }
+  assert.equal(run(root, 'Shell', { command: 'touch ../x' }).status, 2);
+  assert.equal(run(root, 'Shell', { command: 'touch local.txt' }).status, 0);
+  // Hook Claude chargé par Cursor : réponse au format Cursor, sauf appel imbriqué.
+  const cursor = { PATH: root, CLAUDE_PROJECT_DIR: root, CURSOR_VERSION: '2.0.0' };
+  const allowed = run(root, 'Bash', { command: 'npm run test:gate' }, { env: cursor });
+  assert.equal(allowed.status, 0);
+  assert.deepEqual(JSON.parse(allowed.stdout), { permission: 'allow' });
+  const denied = run(root, 'Write', { file_path: '../outside.json' }, { env: cursor });
+  assert.equal(denied.status, 2);
+  assert.equal(JSON.parse(denied.stdout).permission, 'deny');
+  assert.match(JSON.parse(denied.stdout).agent_message, /hors du worktree/u);
+  const nested = run(root, 'Write', { file_path: '../outside.json' }, { env: { ...cursor, CURSOR_HOOK_NESTED: '1' } });
+  assert.equal(nested.status, 2);
+  assert.equal(nested.stdout, '');
+  const project = run(root, 'Write', { file_path: path.join(root, 'local.json') }, { env: { PATH: root, CURSOR_PROJECT_DIR: root } });
+  assert.equal(project.status, 0);
+});
+
+// Cache de plugins fictif reproduisant la disposition réelle (claude-security 0.12.0, octo 9.37.3).
+function pluginCache(t) {
+  const home = temporary(t);
+  const plugins = path.join(home, '.claude/plugins');
+  const security = path.join(plugins, 'cache/claude-plugins-official/claude-security/0.12.0/scripts');
+  const octo = path.join(plugins, 'cache/nyldn-plugins/octo/9.37.3/scripts');
+  for (const name of ['write_scan_meta.py', 'save_result.py', 'keep-waiting.sh', 'lib/plugin.py', 'helper.sh']) put(security, name, '# inerte : jamais exécuté par la garde\n');
+  for (const name of ['install-hooks.sh', 'orchestrate.sh', 'validate-plugin-assembly.py', 'tool.mjs']) put(octo, name, '# inerte\n');
+  put(plugins, 'outside.py', '# hors du cache\n');
+  put(home, 'evil.py', '# hors du cache\n');
+  fs.symlinkSync(path.join(home, 'evil.py'), path.join(security, 'linked.py'));
+  fs.symlinkSync(home, path.join(security, 'escape'));
+  return { home, security, octo };
+}
+
+test('plugins Claude Code : seuls les points d’entrée déclarés s’exécutent, aucune écriture permise (DoD 16)', t => {
+  const root = temporary(t);
+  initProject(root);
+  const { home, security } = pluginCache(t);
+  const env = { PATH: root, HOME: home, CLAUDE_PROJECT_DIR: root };
+  const check = (command, expected) => {
+    const result = run(root, 'Bash', { command }, { env });
+    assert.equal(result.status, expected, `${command}: ${result.stderr}`);
+  };
+  const script = '~/.claude/plugins/cache/claude-plugins-official/claude-security/0.12.0/scripts';
+  const octo = '~/.claude/plugins/cache/nyldn-plugins/octo/9.37.3/scripts';
+  for (const command of [
+    `python3 ${script}/write_scan_meta.py .agent-tmp/run . --mode changes --effort low --base origin/main --merge-base abc123`,
+    `python3 "$HOME/.claude/plugins/cache/claude-plugins-official/claude-security/0.12.0/scripts/save_result.py" .agent-tmp/out.json .agent-tmp/run`,
+    `python3 ${path.join(security, 'write_scan_meta.py')}`, `bash ${script}/keep-waiting.sh 10`,
+    `rtk proxy python3 ${script}/write_scan_meta.py`, `/usr/bin/python3 ${script}/write_scan_meta.py 2>/dev/null`,
+    `python3 ${script}/write_scan_meta.py > .agent-tmp/meta.json && cat .agent-tmp/meta.json`,
+    `python3 ${script}/write_scan_meta.py -config -verbose --range abc..def`,
+  ]) check(command, 0);
+  for (const command of [
+    // Écritures dans les plugins et sorties hors worktree : argument, fragment, affectation, redirection.
+    `touch ${script}/x`, `cp README.md ${script}/write_scan_meta.py`, 'echo x > ~/.claude/plugins/data.json', `rm ${script}/keep-waiting.sh`,
+    `python3 ${script}/write_scan_meta.py --out ${script}/meta.json`, `python3 ${script}/write_scan_meta.py --out=/tmp/meta.json`,
+    `python3 ${script}/write_scan_meta.py out:/tmp/x`, `python3 ${script}/write_scan_meta.py a=b,/tmp/x`, `python3 ${script}/write_scan_meta.py -o/tmp/x`,
+    `OUT=/tmp/x python3 ${script}/write_scan_meta.py`, `OUT=out:/tmp/x python3 ${script}/write_scan_meta.py`,
+    `python3 ${script}/write_scan_meta.py > ~/.claude/plugins/meta.json`, `python3 ${script}/write_scan_meta.py >> /tmp/meta.json`,
+    `python3 ${script}/write_scan_meta.py && touch ../x`, `bash ${script}/keep-waiting.sh ../report`,
+    // Entrée standard fournie au point d'entrée : son contenu n'est pas contrôlé.
+    `echo /tmp/x | bash ${script}/keep-waiting.sh`, `bash ${script}/keep-waiting.sh < /tmp/args`,
+    // Autres plugins et scripts non déclarés du cache.
+    `bash ${octo}/install-hooks.sh`, `bash ${octo}/orchestrate.sh 'consigne libre'`, `python3 ${octo}/validate-plugin-assembly.py`,
+    `python3 ${script}/lib/plugin.py`, `bash ${script}/helper.sh`,
+    // Échappements du cache et formes non couvertes.
+    'python3 ~/.claude/plugins/cache/../outside.py', `python3 ${script}/../../../../../outside.py`, `python3 ${script}/linked.py`,
+    `python3 ${script}/escape/evil.py`, 'python3 ~/.claude/plugins/cache', `python3 ${script}/absent.py`,
+    `python3 -u ${script}/write_scan_meta.py`, `python3 -c "print(1)" ${script}/write_scan_meta.py`,
+    `perl ${script}/write_scan_meta.py`, `sh ${script}/keep-waiting.sh`, `printf x | xargs python3 ${script}/write_scan_meta.py`,
+    `cd ${script} && python3 write_scan_meta.py`, `python3 ${script}/*.py`,
+  ]) check(command, 2);
+  for (const tool of ['Write', 'Edit', 'MultiEdit']) {
+    assert.equal(run(root, tool, { file_path: path.join(security, 'write_scan_meta.py') }, { env }).status, 2, tool);
+  }
+  assert.equal(fs.readFileSync(path.join(security, 'write_scan_meta.py'), 'utf8'), '# inerte : jamais exécuté par la garde\n');
+});
+
+test('plugins Claude Code : un dépôt complète la liste dans tools.json, jamais au-delà', t => {
+  const root = temporary(t);
+  initProject(root);
+  const { home } = pluginCache(t);
+  const env = { PATH: root, HOME: home, CLAUDE_PROJECT_DIR: root };
+  const octo = '~/.claude/plugins/cache/nyldn-plugins/octo/9.37.3/scripts';
+  const status = command => run(root, 'Bash', { command }, { env }).status;
+  const tools = pluginScripts => put(root, PROJECT_FILES.tools, { version: 1, envWrappers: [], pluginScripts, worktree: { privateFiles: [], install: [], notes: [] } });
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+  tools(['nyldn-plugins/octo/*/scripts/tool.mjs', 'nyldn-plugins/octo/*/scripts/validate-plugin-assembly.py']);
+  assert.equal(status(`node ${octo}/tool.mjs --json`), 0);
+  assert.equal(status(`python3 ${octo}/validate-plugin-assembly.py`), 0);
+  assert.equal(status(`bash ${octo}/install-hooks.sh`), 2);
+  // Une entrée hors grammaire (joker de marketplace, ..) invalide la liste du dépôt entière.
+  tools(['*/octo/*/scripts/tool.mjs']);
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+  tools(['nyldn-plugins/octo/../octo/*/scripts/tool.mjs']);
+  assert.equal(status(`node ${octo}/tool.mjs`), 2);
+});
+
+test('affectations préfixées et interpréteurs nourris par stdin : contrôlés comme des arguments', t => {
+  const root = temporary(t);
+  initProject(root);
+  for (const command of [
+    'OUT=/tmp/x node scripts/report.mjs', 'NODE_OPTIONS=--require=/tmp/evil.js node scripts/report.mjs', 'TARGET=../x npm run build',
+    "echo 'touch /tmp/x' | bash", 'printf x | python3 -', 'bash < /tmp/script.sh', 'cat /tmp/code.js | node',
+  ]) bash(root, command, 2);
+  for (const command of [
+    'NODE_ENV=test npm run test', 'BASE_URL=http://127.0.0.1:3001 npm run test:e2e', 'TMPDIR=.agent-tmp/run npm run build',
+    'OUT=/tmp/x cat README.md', 'git diff | node scripts/check.mjs', 'node --version', 'python3 scripts/tool.py < .agent-tmp/input.json',
+  ]) bash(root, command, 0);
+});
+
 test('Write/Edit/MultiEdit : créations, modifications, traversées, symlinks et cwd', t => {
   const root = temporary(t);
   const outside = temporary(t);
@@ -187,8 +312,8 @@ test('init dépose le garde versionné, autonome ; upgrade et répétitions idem
   const target = path.join(root, WRITE_GUARD_FILE);
   const expected = fs.readFileSync(path.join(ROOT, 'lib/claude-worktree-write-guard.cjs'), 'utf8');
   assert.equal(fs.readFileSync(target, 'utf8'), expected);
-  assert.match(expected, /write guard v1\.3\.0/);
-  const files = [...Object.values(PROJECT_FILES).filter(file => file !== PROJECT_FILES.codex), WRITE_GUARD_FILE];
+  assert.equal(expected.includes(`write guard v${VERSION} `), true);
+  const files = [...Object.values(PROJECT_FILES).filter(file => file !== PROJECT_FILES.codex), WRITE_GUARD_FILE, ENV_GUARD_FILE, CAST_GUARD_FILE, CURSOR_HOOKS_FILE];
   const snapshot = () => files.map(file => [file, fs.readFileSync(path.join(root, file), 'utf8'), fs.statSync(path.join(root, file)).mtimeMs]);
   const initial = snapshot();
   initProject(root);
@@ -219,9 +344,13 @@ test('init conserve les autres hooks, permissions, clés, ordre et texte', t => 
     fs.chmodSync(path.join(root, PROJECT_FILES.claude), 0o640);
     initProject(root);
     const after = fs.readFileSync(path.join(root, PROJECT_FILES.claude), 'utf8');
-    assertWriteGuardPostcondition(before, after);
+    assertClaudeHooksPostcondition(before, after);
     assert.deepEqual(JSON.parse(after).permissions, original.permissions);
-    assert.equal(after.replace(/,\s*\{"matcher":"Bash\|Write\|Edit\|MultiEdit","hooks":\[\{"type":"command","command":"node \\"\$CLAUDE_PROJECT_DIR\/scripts\/claude-worktree-write-guard.cjs\\"","timeout":5\}\]\}/u, ''), before);
+    // Seules les trois déclarations sont ajoutées, à l'indentation du tableau qui les reçoit.
+    const expected = structuredClone(original);
+    expected.hooks.PreToolUse.push(WRITE_GUARD_HOOK, ENV_GUARD_HOOK);
+    expected.hooks.PostToolUse.push(CAST_GUARD_HOOK);
+    assert.equal(after, JSON.stringify(expected, null, indent) + '\n');
     assert.equal(fs.statSync(path.join(root, PROJECT_FILES.claude)).mode & 0o777, 0o640);
     buildProject(root);
     assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, PROJECT_FILES.claude))).hooks, JSON.parse(after).hooks);
@@ -229,32 +358,48 @@ test('init conserve les autres hooks, permissions, clés, ordre et texte', t => 
   }
 });
 
-test('déclaration CoproOS existante : pas de second garde, aucun changement de settings', t => {
+test('déclaration CoproOS existante : pas de second garde d’écriture, nouvelles gardes ajoutées une fois', t => {
   const root = temporary(t);
-  const original = { permissions: { allow: ['Read(src/**)'] }, hooks: { PreToolUse: [WRITE_GUARD_HOOK], PostToolUse: [{ matcher: 'Edit|Write|MultiEdit', hooks: [{ type: 'command', command: '.claude/hooks/notify-notion.sh', timeout: 30 }] }] } };
-  const before = JSON.stringify(original, null, '\t') + '\n';
-  put(root, PROJECT_FILES.claude, before);
+  const notify = { matcher: 'Edit|Write|MultiEdit', hooks: [{ type: 'command', command: '.claude/hooks/notify-notion.sh', timeout: 30 }] };
+  const original = { permissions: { allow: ['Read(src/**)'] }, hooks: { PreToolUse: [WRITE_GUARD_HOOK], PostToolUse: [notify] } };
+  put(root, PROJECT_FILES.claude, JSON.stringify(original, null, '\t') + '\n');
   put(root, WRITE_GUARD_FILE, '// garde existant');
   initProject(root);
   assert.equal(fs.readFileSync(path.join(root, WRITE_GUARD_FILE), 'utf8'), '// garde existant');
+  const expected = JSON.stringify({ ...original, hooks: { PreToolUse: [WRITE_GUARD_HOOK, ENV_GUARD_HOOK], PostToolUse: [notify, CAST_GUARD_HOOK] } }, null, '\t') + '\n';
+  assert.equal(fs.readFileSync(path.join(root, PROJECT_FILES.claude), 'utf8'), expected);
   initProject(root, { upgrade: true });
-  assert.equal(fs.readFileSync(path.join(root, PROJECT_FILES.claude), 'utf8'), before);
-  assert.equal(original.hooks.PreToolUse.length, 1);
+  initProject(root);
+  assert.equal(fs.readFileSync(path.join(root, PROJECT_FILES.claude), 'utf8'), expected);
 });
 
-test('seule la déclaration possédée est normalisée, même mêlée à d’autres hooks', () => {
+test('seules les déclarations possédées sont normalisées, même mêlées à d’autres hooks', () => {
   const other = { type: 'command', command: 'node scripts/other.cjs', timeout: 8 };
   const old = { type: 'command', command: `node ./${WRITE_GUARD_FILE}`, timeout: 1, async: true };
-  const before = JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Write', hooks: [other, old], custom: 'kept' }, { matcher: 'Bash', hooks: [old] }] }, permissions: { deny: ['Bash(rm:*)'] } });
-  const result = generateWriteGuardSettings(before);
-  assert.deepEqual(JSON.parse(result).hooks.PreToolUse, [{ matcher: 'Write', hooks: [other], custom: 'kept' }, WRITE_GUARD_HOOK]);
-  assertWriteGuardPostcondition(before, result);
-  assert.equal(generateWriteGuardSettings(result), result);
+  const oldEnv = { type: 'command', command: `node "\${CLAUDE_PROJECT_DIR}/${ENV_GUARD_FILE}"`, timeout: 5 };
+  const oldCast = { type: 'command', command: `node ${CAST_GUARD_FILE}`, timeout: 5 };
+  const before = JSON.stringify({
+    hooks: {
+      PreToolUse: [{ matcher: 'Write', hooks: [other, old, oldEnv], custom: 'kept' }, { matcher: 'Bash', hooks: [old] }],
+      PostToolUse: [{ matcher: 'Edit', hooks: [oldCast] }],
+    },
+    permissions: { deny: ['Bash(rm:*)'] },
+  });
+  const result = generateClaudeHooks(before);
+  assert.deepEqual(JSON.parse(result).hooks, {
+    PreToolUse: [{ matcher: 'Write', hooks: [other], custom: 'kept' }, WRITE_GUARD_HOOK, ENV_GUARD_HOOK],
+    PostToolUse: [CAST_GUARD_HOOK],
+  });
+  assertClaudeHooksPostcondition(before, result);
+  assert.equal(generateClaudeHooks(result), result);
+  // Une commande voisine n'est jamais identifiée par une sous-chaîne.
+  const neighbour = JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Read', hooks: [{ type: 'command', command: `node ${ENV_GUARD_FILE} --verbose` }] }] } });
+  assert.deepEqual(JSON.parse(generateClaudeHooks(neighbour)).hooks.PreToolUse[0], JSON.parse(neighbour).hooks.PreToolUse[0]);
 });
 
 test('post-condition du hook : modifications hors propriété et garde incomplet refusés', () => {
   const before = JSON.stringify(mixedClaudeSettings());
-  const result = generateWriteGuardSettings(before);
+  const result = generateClaudeHooks(before);
   for (const mutate of [
     value => value.permissions.allow.push('Bash(*)'), value => { value.permissions.defaultMode = 'plan'; },
     value => { value.model = 'changed'; }, value => { value.hooks.Stop = []; },
@@ -262,10 +407,14 @@ test('post-condition du hook : modifications hors propriété et garde incomplet
     value => { value.hooks.PreToolUse[0].hooks[0].async = true; },
     value => { value.hooks.PreToolUse[0].matcher = 'Bash'; },
     value => { value.hooks.PreToolUse = []; },
+    value => { value.hooks.PreToolUse[1].matcher = 'Bash|Read'; },
+    value => value.hooks.PreToolUse.push(ENV_GUARD_HOOK),
+    value => { value.hooks.PostToolUse[0].hooks[0].timeout = 5; },
+    value => { delete value.hooks.PostToolUse; },
   ]) {
     const changed = JSON.parse(result);
     mutate(changed);
-    assert.throws(() => assertWriteGuardPostcondition(before, JSON.stringify(changed)), /Post-condition Claude hook/);
+    assert.throws(() => assertClaudeHooksPostcondition(before, JSON.stringify(changed)), /Post-condition Claude hook/);
   }
 });
 
@@ -292,7 +441,7 @@ test('init valide JSON, hooks actifs et chemins avant toute écriture', t => {
     assert.equal(fs.existsSync(path.join(root, PROJECT_FILES.policy)), false);
     assert.equal(fs.readFileSync(path.join(root, PROJECT_FILES.claude), 'utf8'), text);
   }
-  for (const file of [PROJECT_FILES.claude, WRITE_GUARD_FILE]) {
+  for (const file of [PROJECT_FILES.claude, WRITE_GUARD_FILE, ENV_GUARD_FILE, CAST_GUARD_FILE, CURSOR_HOOKS_FILE, PROJECT_FILES.tools]) {
     const root = temporary(t);
     const outside = temporary(t);
     put(outside, 'target', '{}');

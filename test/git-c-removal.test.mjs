@@ -29,7 +29,12 @@ test('retrait git -C : seules 66 allow et 927 ask sont retirées, Codex inchang�
   // Empreintes prises avant édition sur main f5a5f59b9b83e97c01c8cc294513ccc14f36e9c0.
   // La seconde conserve toutes les permissions hors git -C, gardes et ordre compris.
   const sha256 = value => createHash('sha256').update(value).digest('hex');
-  assert.equal(sha256(generateCodex(core)), 'd50d02b1cecb536e694dcf7ff8a7f27a5e5fa877347035824cceba7ef6b97ea8');
+  // Les refus .env Codex du lot A s'ajoutent en fin de socle ; le reste est inchangé.
+  const withoutEnvRefusals = { ...core, entries: core.entries.filter(entry => !entry.pattern?.flat().some(token => /^(?:--env-file=)?(?:\.\/)?\.env/u.test(token))) };
+  assert.equal(core.entries.length - withoutEnvRefusals.entries.length, 6);
+  // L'empreinte date de la v1.3.0 : seul l'en-tête porte la version de livraison.
+  const rules = generateCodex(withoutEnvRefusals).replace(/^# Généré par agent-policy v[0-9.]+\./u, '# Généré par agent-policy v1.3.0.');
+  assert.equal(sha256(rules), 'd50d02b1cecb536e694dcf7ff8a7f27a5e5fa877347035824cceba7ef6b97ea8');
   assert.equal(sha256(JSON.stringify(permissions)), 'eb0b1aa552e52b6cf028a5155e1088c2e7c8fde21f6b278b7bf564324d1e5cb9');
   assert.deepEqual(Object.fromEntries(Object.entries(permissions).map(([key, values]) => [key, values.length])), { allow: 327, ask: 912, deny: 944 });
   for (const values of Object.values(permissions)) {

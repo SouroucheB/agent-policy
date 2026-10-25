@@ -13,7 +13,7 @@ const rules = [...generateCodex(core).matchAll(/pattern=(\[[^\n]+\]),\n\s*decisi
   .map(([, pattern, decision]) => ({ pattern: JSON.parse(pattern), decision }));
 function generatedDecision(command) {
   const argv = tokenize(command);
-  const decisions = rules.filter(rule => rule.pattern.every((token, i) => argv[i] === token)).map(rule => rule.decision);
+  const decisions = rules.filter(rule => rule.pattern.every((token, i) => Array.isArray(token) ? token.includes(argv[i]) : argv[i] === token)).map(rule => rule.decision);
   return ['forbidden', 'prompt', 'allow'].find(decision => decisions.includes(decision));
 }
 
@@ -29,15 +29,18 @@ test('sed -n, cat et ls : trois entrées Codex read-only et leurs neuf règles g
     if (pattern[0] === 'sed') {
       assert.match(source.residualRisk, /-i \/ --in-place/u);
       assert.match(source.residualRisk, /sort -o/u);
-    } else assert.match(source.residualRisk, /\.env.*sandbox lit déjà/u);
+    } else if (pattern[0] === 'cat') assert.match(source.residualRisk, /fichiers \.env courants.*refusés.*cat -n \.env/u);
+    else assert.match(source.residualRisk, /\.env.*sandbox lit déjà/u);
     for (const prefix of [[], ['rtk'], ['rtk', 'proxy']]) {
       assert.deepEqual(rules.filter(rule => JSON.stringify(rule.pattern) === JSON.stringify([...prefix, ...pattern])), [{ pattern: [...prefix, ...pattern], decision: 'allow' }]);
     }
   }
   for (const prefix of prefixes) {
-    for (const command of ["sed -n '1,20p' f", 'sed -n 1p -i f', 'sed -n --in-place=.bak 1p f', 'cat g', 'cat .env', 'ls -la d', 'ls -l .env']) {
+    for (const command of ["sed -n '1,20p' f", 'sed -n 1p -i f', 'sed -n --in-place=.bak 1p f', 'cat g', 'cat -n .env', 'cat .env.example', 'ls -la d', 'ls -l .env']) {
       assert.equal(generatedDecision(prefix + command), 'allow', prefix + command);
     }
+    // Lecture .env en tête d'arguments : refus plus strict que l'allow cat (DoD 2 du lot A).
+    for (const command of ['cat .env', 'cat .env.local', 'cat ./.env', 'cat .env.production']) assert.equal(generatedDecision(prefix + command), 'forbidden', prefix + command);
     // Exemples inertes : aucun de ces fichiers n'est lu ou créé par les tests.
     for (const command of ['sed 1p f', 'sed -i 1p f', 'sed -e 1p f', 'sed -nE 1p f', 'sed --quiet 1p f', "awk '{print $1}' f", 'uniq -c', 'find src -type f', 'git branch --list', 'git branch --list --no-list -D branch']) {
       assert.equal(generatedDecision(prefix + command), undefined, prefix + command);
